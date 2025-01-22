@@ -37,20 +37,23 @@ def initializeEmptyDatabase():
     cursor.execute("""
                    CREATE TABLE fireballs(
                         fireball_id INTEGER PRIMARY KEY,
-                        FOREIGN KEY (station_id) REFERENCES station(station_id)
+                        station_id INTEGER NOT NULL,
                         start_time TEXT,
-                        end_time TEXT
+                        end_time TEXT,
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
                    )
                    """)
     cursor.execute("""
-                   CREATE TABLE stations(
+                   CREATE TABLE clusters(
                         cluster_id INTEGER PRIMARY KEY,
                         start_time TEXT,
                         end_time TEXT
                    )
                    """)
     cursor.execute("""
-                   CREATE TABLE fireballs(
+                   CREATE TABLE clusters_fireballs(
+                        cluster_id INTEGER NOT NULL,
+                        fireball_id INTEGER NOT NULL,
                         FOREIGN KEY (cluster_id) REFERENCES clusters(cluster_id)
                         FOREIGN KEY (fireball_id) REFERENCES fireballs(fireball_id)
                    )
