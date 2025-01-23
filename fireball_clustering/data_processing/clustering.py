@@ -4,7 +4,7 @@
     Date: 2025-01-30
 '''
 import numpy as np
-import sqlite3
+import datetime
 
 from ..database import db_writes 
 
@@ -28,6 +28,7 @@ def identifyFireballs(station_name, station_data, save_to_db=True):
     down = False
     event = [] # (start_time, end_time, station_id)
     '''
+        This comment is super ugly
         Iterates through the intensities
         Keep track of when the std is crossed in both directions
         Each spike (i.e in between an increasing slope cross of std and 
@@ -38,21 +39,26 @@ def identifyFireballs(station_name, station_data, save_to_db=True):
             up = False
             down = True
 
-            time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
-            event.append(time_seconds)
+            # time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
+            # event.append(time_seconds)
+            event.append(station_data['datetimes'][idx])
         if station_data['detrended_intensities'][idx] <= 2*std and down:
             down = False
             up = True
 
-            time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
-            event.append(time_seconds)
+            # time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
+            # event.append(time_seconds)
+            event.append(station_data['datetimes'][idx])
             event.append(station_name)
             fireballs.append(event)
             
             event = []
-
+    
     # Add fireball events to the DB
-    db_writes.insertFireballs([(station_name, start_time, end_time) for start_time, end_time, station_name in fireballs])
+    db_writes.insertFireballs([(station_name, 
+                                datetime.datetime.isoformat(start_time), 
+                                datetime.datetime.isoformat(end_time)) 
+                                for start_time, end_time, station_name in fireballs])
 
     return fireballs 
 

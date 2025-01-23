@@ -1,2 +1,5 @@
 __pycache__/
 venv/
+gmn_fireball_clustering.db
+station_data/
+pickle/

@@ -29,6 +29,7 @@ def insertFireballs(fireballs):
     conn = sqlite3.connect('gmn_fireball_clustering.db')
     cursor = conn.cursor()
     cursor.executemany('INSERT INTO fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', fireballs)
+    conn.commit()
     conn.close()
 
 def insertClusters(clusters):
