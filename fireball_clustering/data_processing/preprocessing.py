@@ -24,7 +24,6 @@ def ingestStationData(fieldsums_path: str):
 
     # Iterate through fieldsum files
     for f in os.listdir(fieldsums_path):
-        print(f)
         # Get starting timestamp and fieldsum data
         timestamp = fh.filenameToDatetime(f)
         half_frames, intensity_arr = fh.readFieldIntensitiesBin(fieldsums_path, f)
