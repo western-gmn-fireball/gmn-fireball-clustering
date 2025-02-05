@@ -1,4 +1,4 @@
-from ..data_processing import preprocessing, clustering
+from ..data_processing import preprocessing, clustering, visualizations
 
 import numpy
 import pickle
@@ -32,6 +32,8 @@ def uk_preprocessing():
             detrended_data = preprocessing.preprocessFieldsums(data)
             detrended_datasets[station] = detrended_data
         
+        visualizations.plot_intensities(detrended_datasets)
+
         # Output statistics of datasets
         for station, data in stations_data.items():
             int_mean = numpy.mean(data['intensities'])
@@ -44,16 +46,22 @@ def uk_preprocessing():
 
         pickle.dump(detrended_datasets, open('./pickle/UK_20230212_processed.pkl', 'wb'))
 
-def uk_fireball_id():
+def uk_fireball_clustering():
     with open('./pickle/UK_20230212_processed.pkl', 'rb') as station_data_file:
         stations_data = pickle.load(station_data_file)
+        fireballs = []
         for station, dataset in stations_data.items():
-            clustering.identifyFireballs(station, dataset)
+            fireballs.extend(clustering.identifyFireballs(station, dataset))
+
+        clusters = clustering.clusterFireballs(fireballs)
+        clusters.to_csv('clusters.csv')
+
+    return clusters
 
 def main():
     print('Running tests...')
     uk_preprocessing()
-    uk_fireball_id()
+    # uk_fireball_clustering()
     print('Tests Complete')
 
 if __name__ == '__main__':

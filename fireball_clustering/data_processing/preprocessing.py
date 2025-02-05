@@ -68,7 +68,7 @@ def preprocessFieldsums(station_data: dict) -> dict:
     if 'intensities' not in station_data: raise 'Intensities expected in dataframe.'
 
     # Bandpass Filter
-    b, a = signal.butter(2, [1/10, 1], btype='band', fs=FPS)
+    b, a = signal.butter(2, [1/10, 1], btype='bandpass', fs=FPS)
     station_data['intensities'] = signal.filtfilt(b, a, station_data['intensities'])
 
     # Ensure datetime var is in datetime format

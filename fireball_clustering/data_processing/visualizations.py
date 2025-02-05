@@ -1,6 +1,9 @@
 import sqlite3
 import pandas as pd
 from keplergl import KeplerGl
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import numpy as np
 
 # def fetch_data(database_path):
 #     """
@@ -132,3 +135,33 @@ if __name__ == "__main__":
     create_kepler_map(processed_data, kepler_config, OUTPUT_FILE)
 
     print(f"Kepler.gl map has been saved to {OUTPUT_FILE}")
+
+def plot_intensities(datasets):
+    colormap = plt.colormaps['tab10']
+    numDatasets = len(datasets)
+
+    for i, (station, data) in enumerate(datasets.items()):
+        std = np.std(data['detrended_intensities'])
+
+        color = colormap(i / numDatasets)
+        plt.plot(data['datetimes'], data['detrended_intensities'], label=station, color=color)
+
+    plt.axhline(2*std, color=color, lw=1)
+
+    # Format the x-axis to display datetime
+    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    # plt.gca().xaxis.set_major_locator(mdates.SecondLocator(interval=5))
+
+    # Rotate the x-axis labels for better readability
+    plt.gcf().autofmt_xdate()
+
+    # Add labels and title
+    plt.xlabel('Time (UTC -0)')
+    plt.ylabel('Max Pixel Intensity')
+    plt.title('Max Pixel Intensity of Multiple GMN Stations')
+
+    # Display the legend
+    plt.legend()
+
+    # Show the plot
+    plt.show()

@@ -16,7 +16,7 @@ def main():
 
     # Data handling
     uk_preprocessing()
-    uk_fireball_id()
+    uk_fireball_clustering()
 
     # Define database path and output file
     DATABASE_PATH = "gmn_fireball_clustering.db"  # Replace with the path to your SQLite database
