@@ -83,7 +83,7 @@ def clusterFireballs(fireballs):
     # Convert start and end to delta since beginning of year and add in station coordinate data
     earliest_time: datetime.datetime = min([start_time for start_time, _, _ in fireballs])
     earliest_year = earliest_time.year
-    start_of_year = datetime.datetime(earliest_year, 1, 1, 1, 0, 0, 0)
+    start_of_year = datetime.datetime(earliest_year, 1, 1, 0, 0, 0, 0)
     modified_fireballs = []
     for start, end, station_id in fireballs:
         new_start = (start - start_of_year).total_seconds()
@@ -95,18 +95,40 @@ def clusterFireballs(fireballs):
     df.to_csv('initial_data.csv')
 
     # Temporal clustering
-    x = df[['start', 'end']].values
+    x_temp = df[['start', 'end']].values
 
     temporal_model = DBSCAN(eps=5, min_samples=2)
-    df['temporal_cluster'] = temporal_model.fit_predict(x)
-    temporal_clusters_df = df[df['temporal_cluster'] >= 0]
-    temporal_clusters_df.to_csv('temporal_clusters.csv')
+    df['temporal_cluster'] = temporal_model.fit_predict(x_temp)
+    temporal_clusters_df = df[df['temporal_cluster'] >= 0].copy()
+    temporal_clusters_df.to_csv('./csv/temporal_clusters.csv')
+    temporal_clusters = temporal_clusters_df.groupby('temporal_cluster')
 
-    # Spatial clustering
-    x = temporal_clusters_df[['lat_rads', 'lng_rads']].values
+    spatiotemporal_clusters_list = []
+    spatiotemporal_cluster_id = 0
+    for name, group in temporal_clusters:
+        group = group.copy()
 
-    spatial_model = DBSCAN(eps=200/6371.0088, min_samples=2, metric='haversine')
-    temporal_clusters_df['spatial_cluster'] = spatial_model.fit_predict(x)
-    spatiotemporal_clusters = temporal_clusters_df[temporal_clusters_df['spatial_cluster'] >= 0]
+        # Spatial clustering
+        x_space = group[['lat_rads', 'lng_rads']].values
 
+        spatial_model = DBSCAN(eps=200/6371.0088, min_samples=2, metric='haversine')
+        group['spatial_cluster'] = spatial_model.fit_predict(x_space)
+        spatiotemporal_cluster = group[group['spatial_cluster'] >= 0]
+        if spatiotemporal_cluster['station_id'].nunique() >= 2:
+            spatiotemporal_cluster['spatiotemporal_cluster_id'] = spatiotemporal_cluster_id
+            spatiotemporal_cluster_id += 1
+            # spatiotemporal_cluster.to_csv(f'./csv/{name}.csv', index=False)
+
+            spatiotemporal_clusters_list.append(spatiotemporal_cluster)
+    
+    if spatiotemporal_clusters_list:
+        spatiotemporal_clusters = pd.concat(spatiotemporal_clusters_list, ignore_index=True)
+
+        # Convert timestamps back to iso format
+        spatiotemporal_clusters['start_iso'] = pd.to_datetime(spatiotemporal_clusters['start'], unit='s', origin=start_of_year)
+        spatiotemporal_clusters['end_iso'] = pd.to_datetime(spatiotemporal_clusters['end'], unit='s', origin=start_of_year)
+        spatiotemporal_clusters['start_iso_str'] = spatiotemporal_clusters['start_iso'].astype(str)
+        spatiotemporal_clusters['end_iso_str'] = spatiotemporal_clusters['end_iso'].astype(str)
+    else:
+        spatiotemporal_clusters = pd.DataFrame()
     return spatiotemporal_clusters 
