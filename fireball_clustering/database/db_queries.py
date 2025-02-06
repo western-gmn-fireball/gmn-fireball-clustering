@@ -48,13 +48,3 @@ def getFireballsByDate(date):
     fireballs = cur.execute(QUERY)
     res = [fireball for fireball in fireballs]
     return res
-
-
-def getStations(prefix):
-    '''
-    Fetches all stations that start with the given prefix. 
-
-    Args:
-        prefix (str): Any valid prefix for station names/IDs (2 letters followed by 4 numbers)
-    '''
-    pass
