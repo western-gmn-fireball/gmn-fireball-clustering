@@ -4,6 +4,7 @@
     Author: Armaan Mahajan
 '''
 import sqlite3
+import datetime
 
 def getStations(station_ids):
     '''
@@ -23,3 +24,37 @@ def getStations(station_ids):
     stations = cur.execute(QUERY, station_ids)
     res = [station for station in stations]
     return res
+
+def getFireballsByDate(date):
+    '''
+    Fetches all recorded fireball candidates for a given date in iso format.
+
+    Args:
+        date (string): A string of the date to be fetched in ISO YYYY-MM-DD format.
+
+    Returns:
+        An array of tuples that match the given date.
+    '''
+    # Input validation
+    try:
+        datetime.date.fromisoformat(date)
+    except ValueError:
+        return None
+
+    QUERY = f"SELECT * FROM fireballs WHERE start_time LIKE '{date}%'"
+
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cur = conn.cursor()
+    fireballs = cur.execute(QUERY)
+    res = [fireball for fireball in fireballs]
+    return res
+
+
+def getStations(prefix):
+    '''
+    Fetches all stations that start with the given prefix. 
+
+    Args:
+        prefix (str): Any valid prefix for station names/IDs (2 letters followed by 4 numbers)
+    '''
+    pass
