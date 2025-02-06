@@ -39,6 +39,16 @@ def initializeEmptyDatabase():
                    )
                    """)
     cursor.execute("""
+                   Create TABLE fieldsums(
+                        fieldsum_id INTEGER PRIMARY KEY,
+                        station_id TEXT NOT NULL,
+                        fieldsums BLOB NOT NULL,
+                        date TEXT NOT NULL,
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
+                   )
+                   """
+    )
+    cursor.execute("""
                    CREATE TABLE fireballs(
                         fireball_id INTEGER PRIMARY KEY,
                         station_id TEXT NOT NULL,
