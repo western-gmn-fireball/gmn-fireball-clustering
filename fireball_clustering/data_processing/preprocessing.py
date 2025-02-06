@@ -3,6 +3,7 @@
     Author: Armaan Mahajan
     Date: 2025-01-30
 '''
+import os
 import pandas as pd
 import datetime
 from scipy import signal
@@ -11,23 +12,31 @@ from ..utils import fieldsum_handlers as fh
 
 FPS = 25 # FPS of camera, assumed to be 25
 
-def ingestStationData(station_file_path: str):
+def ingestStationData(fieldsums_path: str):
     '''
     Args:
-        station_file_path (str): Path to the station data file. 
+        fieldsums_path (str): Path to the directory containing the fieldsums. 
     Returns:
         dict: Dictionary with station data 'datetimes', 'intensities'.
     '''
-    station_data = {'datetimes': None, 'intensities': None}
-    timestamp = fh.filenameToDatetime(station_file_path)
-    half_frames, intensity_arr = fh.readFieldIntensitiesBin(station_file_path)
-
+    station_data = {}
     datapoints = []
-    for i in range(len(half_frames)):
-        timestamp += datetime.timedelta(seconds=1/FPS)
-        datapoints.append((timestamp, intensity_arr[i]))
+
+    # Iterate through fieldsum files
+    for f in os.listdir(fieldsums_path):
+        # Get starting timestamp and fieldsum data
+        timestamp = fh.filenameToDatetime(f)
+        half_frames, intensity_arr = fh.readFieldIntensitiesBin(fieldsums_path, f)
+        
+        # Add each time step and intensity to in memory data
+        for i in range(len(half_frames)):
+            timestamp += datetime.timedelta(seconds=1/FPS)
+            datapoints.append((timestamp, intensity_arr[i]))
+
+    # Sort data by time 
     datapoints.sort(key = lambda x: x[0])
 
+    # Add data to return variable
     station_data['datetimes'] = [x[0] for x in datapoints]
     station_data['intensities'] = [x[1] for x in datapoints]
 
@@ -59,7 +68,7 @@ def preprocessFieldsums(station_data: dict) -> dict:
     if 'intensities' not in station_data: raise 'Intensities expected in dataframe.'
 
     # Bandpass Filter
-    b, a = signal.butter(2, [1/10, 1], btype='band', fs=FPS)
+    b, a = signal.butter(2, [1/10, 1], btype='bandpass', fs=FPS)
     station_data['intensities'] = signal.filtfilt(b, a, station_data['intensities'])
 
     # Ensure datetime var is in datetime format
