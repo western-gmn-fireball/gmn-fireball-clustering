@@ -129,6 +129,7 @@ def clusterFireballs(fireballs):
         spatiotemporal_clusters['end_iso'] = pd.to_datetime(spatiotemporal_clusters['end'], unit='s', origin=start_of_year)
         spatiotemporal_clusters['start_iso_str'] = spatiotemporal_clusters['start_iso'].astype(str)
         spatiotemporal_clusters['end_iso_str'] = spatiotemporal_clusters['end_iso'].astype(str)
+
     else:
         spatiotemporal_clusters = pd.DataFrame()
     return spatiotemporal_clusters 
