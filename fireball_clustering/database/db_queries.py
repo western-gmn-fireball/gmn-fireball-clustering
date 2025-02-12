@@ -5,6 +5,7 @@
 '''
 import sqlite3
 import datetime
+import numpy as np
 
 def getStations(station_ids):
     '''
@@ -24,6 +25,31 @@ def getStations(station_ids):
     stations = cur.execute(QUERY, station_ids)
     res = [station for station in stations]
     return res
+
+def getFieldsumsByDate(date):
+    '''
+    Fetches all fieldsum arrays for a given date in iso format.
+
+    Args:
+        date (string): A string of the date to be fetched in ISO YYYY-MM-DD format.
+
+    Returns:
+        An array of tuples with form (station_id, date, fieldsum_array)
+    '''
+    # Input validation
+    try:
+        datetime.date.fromisoformat(date)
+    except ValueError:
+        return None
+
+    QUERY = f"SELECT * FROM fieldsums WHERE date LIKE '{date}%'"
+
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cur = conn.cursor()
+    rows = cur.execute(QUERY)
+    fieldsum_db_data = [row for row in rows]
+    fieldsum_data = [(station_id, date, np.frombuffer(fs_array)) for _, station_id, date, fs_array in fieldsum_db_data]
+    return fieldsum_data
 
 def getFireballsByDate(date):
     '''

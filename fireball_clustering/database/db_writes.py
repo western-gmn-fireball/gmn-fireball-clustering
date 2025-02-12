@@ -19,18 +19,41 @@ def insertStations(stations):
     conn.commit()
     conn.close()
 
+def insertFieldsums(fieldsums):
+    '''
+    Inserts 1+ fieldsum arrays into the fieldsums table of the database.
+
+    Args:
+        fieldsums (list of tuples): List of tuples with format (station_id, date, np.array(fieldsums))  
+    '''
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cursor = conn.cursor()
+    cursor.executemany('INSERT INTO fieldsums (station_id, date, fieldsums) VALUES(?, ?, ?)', fieldsums)
+    conn.commit()
+    conn.close()
+
 def insertFireballs(fireballs):
     '''
     Inserts one or more fireballs into the fireballs table of the database.
 
     Args:
         fireballs (list of tuples): List of tuples with following format(station_id, start_time, end_time))
+    
+    Returns:
+        Array of primary keys for each fireball in the same order as they were inserted.
     '''
+    res = [] # Array of IDs
+
     conn = sqlite3.connect('gmn_fireball_clustering.db')
     cursor = conn.cursor()
-    cursor.executemany('INSERT INTO fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', fireballs)
+    for fireball in fireballs:
+        cursor.execute('INSERT INTO fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', fireball)
+        res.append(cursor.lastrowid)
     conn.commit()
     conn.close()
+
+    return res
+
 
 def insertClusters(clusters):
     '''
@@ -44,7 +67,5 @@ def insertClusters(clusters):
         - end_time (TEXT): ISO8601 representation of cluster end_time
     
     '''
-    pass
-
-def insertFireballClusters():
-    pass
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cursor = conn.cursor()

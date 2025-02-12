@@ -54,12 +54,13 @@ def ingestMultipleStations(stations: dict) -> pd.DataFrame:
     '''
     pass
 
-def preprocessFieldsums(station_data: dict) -> dict:
+def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dict:
     '''
     Applies a bandpass filter and detrends the fieldsum data for a single station.
 
     Args:
         station_data (dict): Dictionary with station data 'datetimes', 'intensities'.
+        window (int): The window size to be used for detrending and the std.
     Returns:
         dict: Dictionary with bandpass filter and detrending applied.
     '''
@@ -68,23 +69,28 @@ def preprocessFieldsums(station_data: dict) -> dict:
     if 'intensities' not in station_data: raise 'Intensities expected in dataframe.'
 
     # Bandpass Filter
-    b, a = signal.butter(2, [1/10, 1], btype='bandpass', fs=FPS)
-    station_data['intensities'] = signal.filtfilt(b, a, station_data['intensities'])
+    b, a = signal.butter(4, [1/10, 1], btype='bandpass', fs=FPS)
+    station_data['bandpass_intensities'] = signal.filtfilt(b, a, station_data['intensities'])
+    station_data['bandpass_intensities'] = abs(station_data['bandpass_intensities'])
 
     # Ensure datetime var is in datetime format
     df = pd.DataFrame(station_data)
     df['datetimes'] = pd.to_datetime(df['datetimes'])
     df = df.set_index('datetimes')
 
-    # Calculate moving avg
-    window_size = f'{30}s'
-    df['30s_moving_avg'] = df['intensities'].rolling(window=window_size).mean()
+    # Calculate and subtract moving avg
+    avg_window_size = f'{avg_window}s'
+    std_window_size = f'{std_window}s'
 
-    # Subtract moving avg
-    df['detrended_intensities'] = df['intensities'] - df['30s_moving_avg']
+    df[f'{avg_window_size}_moving_avg'] = df['bandpass_intensities'].rolling(window=avg_window_size).mean()
+    df['detrended_intensities'] = abs(df['bandpass_intensities'] - df[f'{avg_window_size}_moving_avg'])
+
+    # Calculate moving standard dev
+    df[f'moving_std'] = df['detrended_intensities'].rolling(window=std_window_size).std()
+
 
     # Return updated dataset
     df = df.reset_index()
-    df = df.drop(columns=['30s_moving_avg'])
+    df = df.drop(columns=[f'{avg_window_size}_moving_avg'])
     processed_data = df.to_dict(orient='list')
     return processed_data
