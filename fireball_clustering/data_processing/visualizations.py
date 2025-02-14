@@ -7,7 +7,7 @@ import numpy as np
 
 from .. import parameters
 
-def plot_intensities(datasets, fig_name):
+def plot_intensities(datasets, file_name, fig_name):
     '''
     Plots a given a dataset(s) with same sized arrays datetimes and intensities. 
 
@@ -19,11 +19,11 @@ def plot_intensities(datasets, fig_name):
     numDatasets = len(datasets)
 
     for i, (station, data) in enumerate(datasets.items()):
-        std = np.std(data['intensities'])
+        # std = np.std(data['intensities'])
 
         color = colormap(i / numDatasets)
-        plt.plot(data['datetimes'], data['detrended_intensities'], label=station, color=color)
-        plt.axhline(parameters.CUTOFF * std, color=color, lw=1)
+        plt.plot(data['datetimes'], data['intensities'], label=station, color=color)
+        # plt.axhline(parameters.CUTOFF * std, color=color, lw=1)
 
     # Rotate the x-axis labels for better readability
     plt.gcf().autofmt_xdate()
@@ -31,12 +31,12 @@ def plot_intensities(datasets, fig_name):
     # Add labels and title
     plt.xlabel('Time (UTC -0)')
     plt.ylabel('Max Pixel Intensity')
-    plt.title('Max Pixel Intensity of Multiple GMN Stations')
+    plt.title(fig_name)
 
     # Display the legend
     plt.legend()
 
     # Show the plot
-    plt.savefig(f'{fig_name}.png')
+    plt.savefig(f'{file_name}.png')
     plt.close()
     # plt.show()

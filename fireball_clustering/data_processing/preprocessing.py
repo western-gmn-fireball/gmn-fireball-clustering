@@ -94,3 +94,9 @@ def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dic
     df = df.drop(columns=[f'{avg_window_size}_moving_avg'])
     processed_data = df.to_dict(orient='list')
     return processed_data
+
+def bandpassFilter(station_data: dict):
+    pass
+
+def detrendData(station_data: dict, avg_window=30, std_window=30):
+    pass
