@@ -44,15 +44,11 @@ def identifyFireballs(station_name, station_data, save_to_db=True):
             up = False
             down = True
 
-            # time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
-            # event.append(time_seconds)
             event.append(station_data['datetimes'][idx])
         if station_data['detrended_intensities'][idx] <= CUTOFF * std and down:
             down = False
             up = True
 
-            # time_seconds = (station_data['datetimes'][idx] - first_timestamp).total_seconds()
-            # event.append(time_seconds)
             event.append(station_data['datetimes'][idx])
             event.append(station_name)
             fireballs.append(event)
