@@ -5,6 +5,7 @@
 '''
 import numpy as np
 import datetime
+import bisect
 import pandas as pd
 from sklearn.cluster import DBSCAN
 
@@ -65,6 +66,24 @@ def identifyFireballs(station_name, station_data, save_to_db=True):
         fireballs[i].append(fireball_ids[i])
 
     return fireballs
+
+def filterFireballsWithFR(fireballs, fr_timestamps):
+    candidates = []
+    for fireball in fireballs:
+        start_time, _, _, _= fireball
+
+        closest_fr_idx = bisect.bisect_left(fr_timestamps, start_time)
+        left = closest_fr_idx if closest_fr_idx < len(fr_timestamps) else len(fr_timestamps) - 1
+        right = closest_fr_idx + 1 if closest_fr_idx + 1 < len(fr_timestamps) else None
+        left_delta = abs(fr_timestamps[left] - start_time)
+        right_delta = abs(fr_timestamps[right] - start_time) if right else None
+        
+        MAX_DELTA = datetime.timedelta(seconds=10)
+        if left_delta <= MAX_DELTA or (right_delta and right_delta <= MAX_DELTA):
+            candidates.append(fireball)
+    
+    return candidates
+
 
 def clusterFireballs(fireballs):
     '''

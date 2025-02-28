@@ -1,11 +1,4 @@
-import sqlite3
-import pandas as pd
-from keplergl import KeplerGl
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import numpy as np
-
-from .. import parameters
 
 def plot_intensities(datasets, file_name, fig_name):
     '''

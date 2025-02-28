@@ -55,7 +55,7 @@ def _getFrFiles(target_file, tar):
     with tarfile.open(f'tmp/{tar}', mode='r:bz2') as file:
         # Write FR file names to fr_files folder
         FR_FILES = [i.name for i in file.getmembers() if i.name.startswith('./FR')]
-        with open(f'./fr_files/{target_file}.txt', 'w') as f:
+        with open(f'./fr_files/{target_file}', 'w') as f:
             for item in FR_FILES:
                 f.write(item + '\n')
 
@@ -129,13 +129,43 @@ def _splitNameDate(strings):
 def main():
     au_files = {
         "AU0006": f"AU0006_20221114",
-        # "AU0007": f"AU0007_20221114",
-        # "AU0009": f"AU0009_20221114",
-        # "AU000A": f"AU000A_20221114",
-        # "AU000C": f"AU000C_20221114",
-        # "AU000X": f"AU000X_20221114",
-        # "AU000Y": f"AU000Y_20221114",
-        # "AU0010": f"AU0010_20221114",
+        "AU0007": f"AU0007_20221114",
+        "AU0009": f"AU0009_20221114",
+        "AU000A": f"AU000A_20221114",
+        "AU000C": f"AU000C_20221114",
+        "AU000X": f"AU000X_20221114",
+        "AU000Y": f"AU000Y_20221114",
+        "AU0010": f"AU0010_20221114",
+        # "AU000Q": "AU000Q_20241212", 
+        # "AU004B": "AU004B_20241212",
+        # "AU004K": "AU004K_20241212",
+        # "AU0047": "AU0047_20241212",
+        # "AU000D": "AU000D_20240506", 
+        # "AU000Z": "AU000Z_20240506", 
+        # "AU001A": "AU001A_20240506", 
+        # "AU003D": "AU003D_20240506", 
+        # "AU0038": "AU0038_20240506", 
+        # "AU000E": "AU000E_20230319",
+        # "AU000F": "AU000F_20230319",
+        # "AU000V": "AU000V_20230319",
+        # "AU000U": "AU000U_20230319",
+        # "AU000W": "AU000W_20230319",
+        # "AU000Z": "AU000Z_20230319",
+        # "AU0006": "AU0006_20230319",
+        # "AU000A": "AU000A_20221204",
+        # "AU000E": "AU000E_20221204",
+        # "AU000G": "AU000G_20221204",
+        # "AU000V": "AU000V_20221204",
+        # "AU000X": "AU000X_20221204",
+        # "AU0002": "AU0002_20221204",
+        # "AU0003": "AU0003_20221204",
+        # "AU0010": "AU0010_20221204",
+        # "AU000X": "AU000X_20221107",
+        # "AU000Y": "AU000Y_20221107",
+        # "AU0006": "AU0006_20221107",
+        # "AU0007": "AU0007_20221107",
+        # "AU0009": "AU0009_20221107",
+        # "AU0010": "AU0010_20221107",
     }
 
     fetchFiles(_splitNameDate([string for _, string in au_files.items()]))

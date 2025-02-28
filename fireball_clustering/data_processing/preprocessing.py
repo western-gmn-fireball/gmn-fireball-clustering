@@ -42,6 +42,21 @@ def ingestStationData(fieldsums_path: str):
 
     return station_data
 
+def ingestFRFiles(fr_file_path: str):
+    """
+    Get the datetime of detected FR events. 
+
+    Args:
+        fr_file_path (str): The path to the FR file containing filenames.
+
+    Returns:
+        List[datetime]: A list of datetime objects derived from filenames.
+    """
+    with open(fr_file_path, 'r') as file:
+        fr_files = [line.strip('./') for line in file]
+    fr_timestamps = [fh.filenameToDatetime(i) for i in fr_files]
+    return fr_timestamps
+
 def ingestMultipleStations(stations: dict) -> pd.DataFrame:
     '''
     Wrapper for ingestStationData that allows ingestion of multiple stations
@@ -88,15 +103,8 @@ def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dic
     # Calculate moving standard dev
     df[f'moving_std'] = df['detrended_intensities'].rolling(window=std_window_size).std()
 
-
     # Return updated dataset
     df = df.reset_index()
     df = df.drop(columns=[f'{avg_window_size}_moving_avg'])
     processed_data = df.to_dict(orient='list')
     return processed_data
-
-def bandpassFilter(station_data: dict):
-    pass
-
-def detrendData(station_data: dict, avg_window=30, std_window=30):
-    pass
