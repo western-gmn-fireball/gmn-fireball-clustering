@@ -4,10 +4,11 @@
 
     Author: Armaan Mahajan
 '''
+from os.path import isdir
 import paramiko
 import tarfile
 import os
-import io
+import shutil
 
 def _getSftpClient():
     HOST = os.getenv('GMN_HOST')
@@ -17,7 +18,8 @@ def _getSftpClient():
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname=HOST, username=USER, password=PASS, port=22, key_filename=KEY_FILE)
+    if HOST and USER and PASS and KEY_FILE:
+        ssh.connect(hostname=HOST, username=USER, password=PASS, port=22, key_filename=KEY_FILE)
 
     sftp = ssh.open_sftp()
     return sftp
@@ -31,15 +33,31 @@ def _getFieldsums(SFTP: paramiko.SFTPClient, target_dir: str, remote_dir: str):
     print('Opening tarfile.')
     with tarfile.open(f'tmp/{remote_dir}', mode='r:bz2') as file:
         print('File opened. Searching for fieldsums.')
+        
+        
         file.extractall(path=target_dir, members=[i for i in file.getmembers() if i.name.startswith('./FS') and i.name.endswith('tar.bz2')])
     print(f'Extracted fieldsum file from {remote_dir}.')
 
 def _extractFieldsum(tar_file_path, folder_name):
+    if not os.path.isdir('fieldsums'): os.mkdir('fieldsums')
+
     print(f'Extracting {tar_file_path}')
     if not os.path.isdir(f'./fieldsums/{folder_name}'): os.mkdir(f'./fieldsums/{folder_name}')
     with tarfile.open(f'./fieldsums/{tar_file_path}', mode='r:bz2') as tar:
         tar.extractall(f'./fieldsums/{folder_name}')
     print(f'Finished extracting {tar_file_path}')
+
+def _getFrFiles(target_file, tar):
+    # Ensure dirs exist
+    if not os.path.isdir('./fr_files'): os.mkdir('./fr_files')
+
+    
+    with tarfile.open(f'tmp/{tar}', mode='r:bz2') as file:
+        # Write FR file names to fr_files folder
+        FR_FILES = [i.name for i in file.getmembers() if i.name.startswith('./FR')]
+        with open(f'./fr_files/{target_file}.txt', 'w') as f:
+            for item in FR_FILES:
+                f.write(item + '\n')
 
 def fetchFiles(nights):
     '''
@@ -58,14 +76,49 @@ def fetchFiles(nights):
         for tar in SFTP.listdir():
             if tar.startswith(f'{station_id}_{date}'):
                 _getFieldsums(SFTP, './fieldsums', tar)
+                _getFrFiles(f'{station_id}_{date}', tar)
         SFTP.chdir('/home')
     
-    # Get list of fieldsums tarballs and extract them
-    tar_files = [file for file in os.listdir('./fieldsums') if file.startswith('FS') and file.endswith('.tar.bz2')]
-    for tar_file in tar_files:
-        # TODO: extract to folder for specific station
-        _extractFieldsum(tar_file, f'{station_id}_{date}')
+    
+    # The expected file structure is COUNTRY_DATE -> STATION_ID_DATE -> fieldsum files
+    for station_id, date in nights.items():
+        write_path = f"./fieldsums/{station_id}_{date}"
+        if not os.path.isdir(write_path): os.mkdir(write_path)
+        
+        tar_files = [file for file in os.listdir('./fieldsums') if file.startswith(f'FS_{station_id}') and file.endswith('.tar.bz2')]
+        for tar_file in tar_files:
+            _extractFieldsum(tar_file, f"{station_id}_{date}")
 
+def cleanup():
+    fieldsum_dirs = []
+    unique_dirs = set()
+    parents = []
+    children = []
+
+    for item in os.listdir('./fieldsums'):
+        if item.endswith('.tar.bz2'): os.remove(os.path.join('./fieldsums', item))
+        if os.path.isdir(os.path.join('./fieldsums', item)):
+            print(item)
+            fieldsum_dirs.append(item)
+            children.append(os.path.join('./fieldsums', item))
+    
+    for i in fieldsum_dirs:
+        country_date = i[0] + i[1] + "_" + i.split('_')[-1]
+        unique_dirs.add(country_date)
+
+    for dir in unique_dirs:
+        full_path = os.path.join('./fieldsums', dir)
+        parents.append(full_path)
+        if not os.path.isdir(full_path):
+            os.makedirs(full_path, exist_ok=True)
+    
+    for parent in parents:
+        for child in children:
+            if parent.split('_')[-1] == child.split('_')[-1]:
+                shutil.move(child, parent)
+    
+    shutil.rmtree('/tmp', ignore_errors=True)
+    
 def _splitNameDate(strings):
     res = {}
     for string in strings:
@@ -76,16 +129,17 @@ def _splitNameDate(strings):
 def main():
     au_files = {
         "AU0006": f"AU0006_20221114",
-        "AU0007": f"AU0007_20221114",
-        "AU0009": f"AU0009_20221114",
-        "AU000A": f"AU000A_20221114",
-        "AU000C": f"AU000C_20221114",
-        "AU000X": f"AU000X_20221114",
-        "AU000Y": f"AU000Y_20221114",
-        "AU0010": f"AU0010_20221114",
+        # "AU0007": f"AU0007_20221114",
+        # "AU0009": f"AU0009_20221114",
+        # "AU000A": f"AU000A_20221114",
+        # "AU000C": f"AU000C_20221114",
+        # "AU000X": f"AU000X_20221114",
+        # "AU000Y": f"AU000Y_20221114",
+        # "AU0010": f"AU0010_20221114",
     }
 
     fetchFiles(_splitNameDate([string for _, string in au_files.items()]))
+    cleanup()
 
 if __name__=='__main__':
     main()
