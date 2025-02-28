@@ -95,7 +95,7 @@ def clusterFireballs(fireballs):
         fireballs (array of tuples: (start_time, end_time, station_name)): processed fireballs as outputted by clustering.identifyFireballs()
     '''
     # Get stations coordinates in radians map station_id to them
-    stations = list(set([station for _, _, station, _ in fireballs])) #####
+    stations = list(set([station for _, _, station, _ in fireballs]))
     stations_with_coords = db_queries.getStations(stations)
     stations_coords_map = {}
     for station in stations_with_coords:
