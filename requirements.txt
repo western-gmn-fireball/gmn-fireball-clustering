@@ -1,0 +1,8 @@
+matplotlib
+numpy
+pandas
+paramiko
+pytest
+scikit_learn
+scipy
+requests
