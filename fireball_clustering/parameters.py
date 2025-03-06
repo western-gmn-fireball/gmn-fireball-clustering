@@ -9,3 +9,6 @@ CUTOFF = 3
 # Window sizes for moving average and moving standard dev.
 AVG_WINDOW = 30
 STD_WINDOW = 30
+
+# Temporal Proximity to FR events in seconds
+FR_EVENT_PROXIMITY = 10

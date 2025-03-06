@@ -11,46 +11,37 @@ from sklearn.cluster import DBSCAN
 
 from ..database import db_writes, db_queries
 from .. import parameters
+from ..dataclasses.models import ProcessedStationData, Fireball
 
-'''
-    @todo: Add lat and lng into the data considerations (could just include it in station_data to have it for reference everywhere)
-'''
-def identifyFireballs(station_name, station_data, save_to_db=True):
+# TODO: Add lat and lng into the data considerations (could just include it in station_data to have it for reference everywhere)
+def identifyFireballs(station_name: str, station_data: ProcessedStationData, save_to_db=True) -> list[Fireball]:
     '''
     Args:
         station_data (dict): Dictionary with processed station data.
         save_to_db (bool): If True, saves the fireball data to the database.
     '''
-    first_timestamp = min(station_data['datetimes'])
     fireballs = []
-        
-    # Get standard deviation
-    # std = np.std(station_data['detrended_intensities'])
 
     # Modify into feature space
     up = True
     down = False
     event = [] # (start_time, end_time, station_id)
-    '''
-        This comment is super ugly
-        Iterates through the intensities
-        Keep track of when the std is crossed in both directions
-        Each spike (i.e in between an increasing slope cross of std and 
-        decreasing slope cross of std) is added to the feature set
-    '''
+    
+    # Peak detection
+    # TODO: optimize
     CUTOFF = parameters.CUTOFF # multiple of sigma
-    for idx in range(len(station_data['intensities'])):
-        std = station_data['moving_std'][idx]
-        if station_data['detrended_intensities'][idx] >= CUTOFF * std and up:
+    for idx in range(len(station_data.intensities)):
+        std = station_data.moving_std[idx]
+        if station_data.detrended_intensities[idx] >= CUTOFF * std and up:
             up = False
             down = True
 
-            event.append(station_data['datetimes'][idx])
-        if station_data['detrended_intensities'][idx] <= CUTOFF * std and down:
+            event.append(station_data.datetimes[idx])
+        if station_data.detrended_intensities[idx] <= CUTOFF * std and down:
             down = False
             up = True
 
-            event.append(station_data['datetimes'][idx])
+            event.append(station_data.datetimes[idx])
             event.append(station_name)
             fireballs.append(event)
             
@@ -61,31 +52,55 @@ def identifyFireballs(station_name, station_data, save_to_db=True):
                                 datetime.datetime.isoformat(start_time), 
                                 datetime.datetime.isoformat(end_time)) 
                                 for start_time, end_time, station_name in fireballs])
-
+    
+    # Convert to fireball dataclass
     for i in range(len(fireballs)):
         fireballs[i].append(fireball_ids[i])
+    
+    fireballs_dataclass = [Fireball(
+        station_name=station_name,
+        start_time=start_time,
+        end_time=end_time,
+        id=id
+    ) for start_time, end_time, station_name, id in fireballs]
 
-    return fireballs
+    return fireballs_dataclass 
 
-def filterFireballsWithFR(fireballs, fr_timestamps):
-    candidates = []
+def filterFireballsWithFR(fireballs: list[Fireball], fr_timestamps: list[datetime.datetime]):
+    '''
+    Filters fireballs based on temporal proximity to FR event timestamps.
+
+    Args:
+        fireball list[Fireball]: list of candidate fireballs  
+        fr_timestamps list[datetime.datetime]
+
+    Returns:
+        list[fireball] Candidate fireballs filtered based on FR events
+    '''
+    candidates: list[Fireball] = []
     for fireball in fireballs:
-        start_time, _, _, _= fireball
-
+        start_time = fireball.start_time
+        
+        # Find temporally nearest FR events to fireball
         closest_fr_idx = bisect.bisect_left(fr_timestamps, start_time)
+ 
         left = closest_fr_idx if closest_fr_idx < len(fr_timestamps) else len(fr_timestamps) - 1
         right = closest_fr_idx + 1 if closest_fr_idx + 1 < len(fr_timestamps) else None
+        
         left_delta = abs(fr_timestamps[left] - start_time)
         right_delta = abs(fr_timestamps[right] - start_time) if right else None
         
-        MAX_DELTA = datetime.timedelta(seconds=10)
+        # Filter for fireballs within MAX_DELTA seconds of FR events
+        # TODO: change seconds to a parameter in parameters
+        MAX_DELTA = datetime.timedelta(seconds=parameters.FR_EVENT_PROXIMITY)
         if left_delta <= MAX_DELTA or (right_delta and right_delta <= MAX_DELTA):
             candidates.append(fireball)
     
     return candidates
 
-
-def clusterFireballs(fireballs):
+# TODO: write clusters to DB
+# TODO: clean function up
+def clusterFireballs(fireballs: list[Fireball]):
     '''
     Clusters fireballs using a 2 stage approach:
         1. Cluster based on time(sec) from the start of the year
@@ -95,25 +110,28 @@ def clusterFireballs(fireballs):
         fireballs (array of tuples: (start_time, end_time, station_name)): processed fireballs as outputted by clustering.identifyFireballs()
     '''
     # Get stations coordinates in radians map station_id to them
-    stations = list(set([station for _, _, station, _ in fireballs]))
+    stations = list(set([fireball.station_name for fireball in fireballs]))
     stations_with_coords = db_queries.getStations(stations)
     stations_coords_map = {}
     for station in stations_with_coords:
         stations_coords_map[station[0]] = np.radians([station[1], station[2]])
 
     # Convert start and end to delta since beginning of year and add in station coordinate data
-    earliest_time: datetime.datetime = min([start_time for start_time, _, _, _ in fireballs])
+    earliest_time: datetime.datetime = min([fireball.start_time for fireball in fireballs])
     earliest_year = earliest_time.year
     start_of_year = datetime.datetime(earliest_year, 1, 1, 0, 0, 0, 0)
     modified_fireballs = []
-    for start, end, station_id, fireball_id in fireballs:
+    for fireball in fireballs:
+        start = fireball.start_time
+        end = fireball.end_time
+        station_id = fireball.station_name
+        fireball_id = fireball.id
         new_start = (start - start_of_year).total_seconds()
         new_end = (end - start_of_year).total_seconds()
         lat_rads, lng_rads = stations_coords_map[station_id]
         modified_fireballs.append([new_start, new_end, lat_rads, lng_rads, station_id, fireball_id])
     
     df = pd.DataFrame(modified_fireballs, columns=['start', 'end', 'lat_rads', 'lng_rads', 'station_id', 'fireball_id']) 
-    df.to_csv('initial_data.csv')
 
     # Temporal clustering
     x_temp = df[['start', 'end']].values
@@ -127,7 +145,7 @@ def clusterFireballs(fireballs):
     # Spatial clustering for each temporal cluster
     spatiotemporal_clusters_list = []
     spatiotemporal_cluster_id = 0
-    for name, group in temporal_clusters:
+    for _, group in temporal_clusters:
         group = group.copy()
 
         # Spatial clustering
