@@ -9,6 +9,7 @@ import datetime
 from scipy import signal
 
 from ..utils import fieldsum_handlers as fh
+from ..dataclasses.models import StationData, ProcessedStationData    
 
 FPS = 25 # FPS of camera, assumed to be 25
 
@@ -17,10 +18,10 @@ def ingestStationData(fieldsums_path: str):
     Args:
         fieldsums_path (str): Path to the directory containing the fieldsums. 
     Returns:
-        dict: Dictionary with station data 'datetimes', 'intensities'.
+        StationData: StationData dataclass with fieldsum data.
     '''
-    station_data = {}
     datapoints = []
+    station_data = StationData(datetimes=[], intensities=[])
 
     # Iterate through fieldsum files
     for f in os.listdir(fieldsums_path):
@@ -37,8 +38,8 @@ def ingestStationData(fieldsums_path: str):
     datapoints.sort(key = lambda x: x[0])
 
     # Add data to return variable
-    station_data['datetimes'] = [x[0] for x in datapoints]
-    station_data['intensities'] = [x[1] for x in datapoints]
+    station_data.datetimes = [x[0] for x in datapoints]
+    station_data.intensities = [x[1] for x in datapoints]
 
     return station_data
 
@@ -57,19 +58,8 @@ def ingestFRFiles(fr_file_path: str):
     fr_timestamps = [fh.filenameToDatetime(i) for i in fr_files]
     return fr_timestamps
 
-def ingestMultipleStations(stations: dict) -> pd.DataFrame:
-    '''
-    Wrapper for ingestStationData that allows ingestion of multiple stations
-    with one call.
-
-    Args:
-        stations (dict): Keys as station IDs and values of station data file paths. 
-    Returns:
-        pandas.DataFrame: Dictionary with station data 'datetimes', 'intensities'.
-    '''
-    pass
-
-def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dict:
+# TODO: convert to dataframe before handling data
+def preprocessFieldsums(station_data: StationData, avg_window=30, std_window=30) -> ProcessedStationData:
     '''
     Applies a bandpass filter and detrends the fieldsum data for a single station.
 
@@ -77,21 +67,20 @@ def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dic
         station_data (dict): Dictionary with station data 'datetimes', 'intensities'.
         window (int): The window size to be used for detrending and the std.
     Returns:
-        dict: Dictionary with bandpass filter and detrending applied.
+        ProcessedStationData: A ProcessedStationData object.
     '''
-    # Input validation
-    if 'datetimes' not in station_data: raise 'Datetimes expected in dataframe.'
-    if 'intensities' not in station_data: raise 'Intensities expected in dataframe.'
+    # Convert station data to dataframe
+    df = pd.DataFrame({ 
+        'datetimes': station_data.datetimes,
+        'intensities': station_data.intensities,
+    })
+    df['datetimes'] = pd.to_datetime(df['datetimes'])
+    df = df.set_index('datetimes')
 
     # Bandpass Filter
     b, a = signal.butter(4, [1/10, 1], btype='bandpass', fs=FPS)
-    station_data['bandpass_intensities'] = signal.filtfilt(b, a, station_data['intensities'])
-    station_data['bandpass_intensities'] = abs(station_data['bandpass_intensities'])
-
-    # Ensure datetime var is in datetime format
-    df = pd.DataFrame(station_data)
-    df['datetimes'] = pd.to_datetime(df['datetimes'])
-    df = df.set_index('datetimes')
+    df['bandpass_intensities'] = signal.filtfilt(b, a, df['intensities'])
+    df['bandpass_intensities'] = abs(df['bandpass_intensities'])
 
     # Calculate and subtract moving avg
     avg_window_size = f'{avg_window}s'
@@ -107,4 +96,13 @@ def preprocessFieldsums(station_data: dict, avg_window=30, std_window=30) -> dic
     df = df.reset_index()
     df = df.drop(columns=[f'{avg_window_size}_moving_avg'])
     processed_data = df.to_dict(orient='list')
-    return processed_data
+
+    processed_station_data = ProcessedStationData(
+        datetimes = processed_data['datetimes'],
+        intensities = processed_data['intensities'],
+        detrended_intensities = processed_data['detrended_intensities'],
+        moving_std = processed_data['moving_std'],
+    )
+
+    return processed_station_data 
+

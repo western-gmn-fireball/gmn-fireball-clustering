@@ -4,7 +4,6 @@ from ..database import db_setup
 from dataclasses import dataclass
 
 import multiprocessing
-import numpy
 import pandas as pd
 import pickle
 import os
@@ -13,7 +12,7 @@ import datetime
 
 DATA_DIR = './fieldsums/'
 
-def au_ingestion(fireball, stations, fieldsums_folder, target_time):
+def au_ingestion(fireball, stations, fieldsums_folder):
     if not os.path.isdir('./plots'): os.mkdir('./plots')
     if not os.path.isdir('./pickle'): os.mkdir('./pickle')
     if not os.path.isdir('./csv'): os.mkdir('./csv')
@@ -26,11 +25,10 @@ def au_ingestion(fireball, stations, fieldsums_folder, target_time):
     for station, fieldsum_file in stations.items():
         dataset = preprocessing.ingestStationData(f'{DATA_DIR}{fieldsums_folder}/{fieldsum_file}')
         # Select out window and then pickle
-        stations_data[station] = select_time_window(dataset, target_time) 
-        visualizations.plot_intensities({station: stations_data[station]}, f'./plots/{fireball}_{station}_initial_data', f'{fireball}: {station} @ {target_time}')
+        visualizations.plot_intensities({station: stations_data[station]}, f'./plots/{fireball}_{station}_initial_data', f'{fireball}: {station}')
         print(f'[INGESTION] Fieldsums for {station} ingested.')
 
-    visualizations.plot_intensities(stations_data, f'./plots/{fireball}_initial_data', f'Intensities for Fireball at {target_time}')
+    visualizations.plot_intensities(stations_data, f'./plots/{fireball}_initial_data', f'Intensities for Fireball')
     
     # Pickle datasets
     pickle.dump(stations_data, open(f'./pickle/{fireball}.pkl', 'wb'))
@@ -65,7 +63,7 @@ def au_preprocessing(fireball, avg_window, std_window, FILE_NAME, target_time):
             start_target = target_time - datetime.timedelta(seconds=5)
             end_target = target_time + datetime.timedelta(seconds=5)
 
-            df = pd.DataFrame.from_dict(detrended_data)
+            df = detrended_data.getDataframe()
             df['datetimes'] = pd.to_datetime(df['datetimes'])
             filtered = df[(df['datetimes'] > start_target) & (df['datetimes'] < end_target)]
             filtered.to_csv(f'./csv/{station}_preprocessed_target_window.csv')
