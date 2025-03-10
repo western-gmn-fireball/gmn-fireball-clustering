@@ -1,5 +1,5 @@
 '''
-    This file contains some quality of life utility to easily grab test files from
+This file contains some quality of life utility to easily grab test files from
     the GMN server.
 
     Author: Armaan Mahajan
@@ -7,8 +7,10 @@
 from os.path import isdir
 import paramiko
 import tarfile
+from concurrent.futures import ThreadPoolExecutor
 import os
 import shutil
+import time
 
 def _getSftpClient():
     HOST = os.getenv('GMN_HOST')
@@ -65,8 +67,12 @@ def fetchFiles(nights):
         SFTP.chdir(f'{station_id_lower}/files/processed')
         for tar in SFTP.listdir():
             if tar.startswith(f'{station_id}_{date}'):
+                start_time = time.time()
+                print(f'Extracting {station_id}_{date}')
                 _getFieldsums(SFTP, './fieldsums', tar)
                 _getFrFiles(f'{station_id}_{date}', tar)
+                seconds = round(time.time() - start_time)
+                print(f'Extracted {station_id}_{date}. Took {seconds}s.')
         SFTP.chdir('/home')
 
     extracted = []
@@ -119,55 +125,63 @@ def _splitNameDate(strings):
     return res
 
 def main():
-    au_files = {
-        # "AU0006": f"AU0006_20221114",
-        # "AU0007": f"AU0007_20221114",
-        # "AU0009": f"AU0009_20221114",
-        # "AU000A": f"AU000A_20221114",
-        # "AU000C": f"AU000C_20221114",
-        # "AU000X": f"AU000X_20221114",
-        # "AU000Y": f"AU000Y_20221114",
-        # "AU0010": f"AU0010_20221114",
-        #
-        # "AU000Q": "AU000Q_20241212", 
-        # "AU004B": "AU004B_20241212",
-        # "AU004K": "AU004K_20241212",
-        # "AU0047": "AU0047_20241212",
-        #
-        # "AU000D": "AU000D_20240506", 
-        # "AU000Z": "AU000Z_20240506", 
-        # "AU001A": "AU001A_20240506", 
-        # "AU003D": "AU003D_20240506", 
-        # "AU0038": "AU0038_20240506", 
+    stations = [
+        "AU0006",
+        "AU0007",
+        "AU0009",
+        "AU000A",
+        "AU000C",
+        "AU000X",
+        "AU000Y",
+        "AU0010",
+        "AU000Q",
+        "AU004B",
+        "AU004K",
+        "AU0047",
+        "AU000D",
+        "AU000Z",
+        "AU001A",
+        "AU0038",
+        "AU000E",
+        "AU000F",
+        "AU000V",
+        "AU000U",
+        "AU000W",
+        "AU000G",
+        "AU0002",
+        "AU0003",
+    ]
+    
+    dates = [
+        '20221114',
+        '20241212',
+        '20240506',
+        '20221204',
+        '20230319',
+        '20221107',
+    ]
+    
+    all_nights = []
+    for date in dates:
+        nights = {}
+        for station in stations:
+              nights[station] = date
+        all_nights.append(nights)
 
-        "AU000E": "AU000E_20230319",
-        "AU000F": "AU000F_20230319",
-        "AU000V": "AU000V_20230319",
-        "AU000U": "AU000U_20230319",
-        "AU000W": "AU000W_20230319",
-        "AU000Z": "AU000Z_20230319",
-        "AU0006": "AU0006_20230319",
-        "AU000A": "AU000A_20221204",
-        "AU000E": "AU000E_20221204",
-        "AU000G": "AU000G_20221204",
-        "AU000V": "AU000V_20221204",
-        "AU000X": "AU000X_20221204",
-        "AU0002": "AU0002_20221204",
-        "AU0003": "AU0003_20221204",
-        "AU0010": "AU0010_20221204",
-        "AU000X": "AU000X_20221107",
-        "AU000Y": "AU000Y_20221107",
-        "AU0006": "AU0006_20221107",
-        "AU0007": "AU0007_20221107",
-        "AU0009": "AU0009_20221107",
-        "AU0010": "AU0010_20221107",
-    }
-    extracted = fetchFiles(_splitNameDate([string for _, string in au_files.items()]))
-
-    # Check that all files were extracted
-    all_files = set([station for station in au_files])
-    extracted_files = set([string.split('_')[2] for string in extracted])
-    assert all_files == extracted_files
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        executor.map(fetchFiles, all_nights)
+    
+    # extracted = fetchFiles(nights)
+    #
+    # all_files = set([f"{station}_{date}" for station, date in nights.items()])
+    # extracted_files = set([string.split('_')[2] for string in extracted])
+    # try:
+    #     assert all_files == extracted_files
+    # except AssertionError:
+    #     longer = all_files if len(all_files) > len(extracted_files) else extracted_files
+    #     shorter = all_files if len(all_files) < len(extracted_files) else extracted_files
+    #     print(f'Failed to extract files {longer - shorter}')
+    
 
 if __name__=='__main__':
     main()
