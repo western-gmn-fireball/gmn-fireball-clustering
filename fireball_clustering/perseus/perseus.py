@@ -38,10 +38,6 @@ class Perseus:
         """
         file_name = f'{station_id}_{date.strftime('%Y%m%d')}'
         file_path = os.path.join(self.fs_path, file_name)
-        if not os.path.exists(file_path): 
-            print(f'Not found: {file_path}')
-            raise FileNotFoundError
-
         ingestedStationData: StationData = StationData([], []) 
         ingestedStationData = ingestStationData(file_path)
         return ingestedStationData
@@ -49,10 +45,6 @@ class Perseus:
     def ingestFR(self, station_id: str, date: datetime.datetime) -> list[datetime.datetime]:
         file_name = f'{station_id}_{date.strftime('%Y%m%d')}'
         file_path = os.path.join(self.fr_path, file_name)
-        if not os.path.exists(file_path): 
-            print(f'Not found: {file_path}')
-            raise FileNotFoundError
-
         fr_timestamps = ingestFRFiles(file_path)
         return fr_timestamps
 
