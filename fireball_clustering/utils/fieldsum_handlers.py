@@ -9,6 +9,7 @@
 
 import datetime
 import os
+import io
 import numpy as np
 
 def filenameToDatetime(file_name, microseconds='auto'):
@@ -67,34 +68,57 @@ def filenameToDatetime(file_name, microseconds='auto'):
     return datetime.datetime(year, month, day, hour, minute, seconds, us)
 
 def readFieldIntensitiesBin(dir_path, file_name, deinterlace=False):
-	""" Read the field intensities form a binary file.
-	
-	Arguments:
-		dir_path: [str] Path to the directory where the file is located.
-		file_name: [str] Name of the file.
-	"""
+    """ Read the field intensities form a binary file.
 
-	with open(os.path.join(dir_path, file_name), 'rb') as fid:
+    Arguments:
+        dir_path: [str] Path to the directory where the file is located.
+        file_name: [str] Name of the file.
+    """
 
-		# Read the number of entries
-		n_entries = int(np.fromfile(fid, dtype=np.uint16, count = 1))
+    with open(os.path.join(dir_path, file_name), 'rb') as fid:
+        # Read the number of entries
+        n_entries = int(np.fromfile(fid, dtype=np.uint16, count = 1))
 
-		intensity_array = np.zeros(n_entries, dtype=np.uint32)
-		half_frames = np.zeros(n_entries)
+        intensity_array = np.zeros(n_entries, dtype=np.uint32)
+        half_frames = np.zeros(n_entries)
 
-		if deinterlace:
-			deinterlace_flag = 2.0
-		else:
-			deinterlace_flag = 1.0
+        if deinterlace:
+            deinterlace_flag = 2.0
+        else:
+            deinterlace_flag = 1.0
+        
+        # fid.seek(0)
+        # Read individual entries
+        for i in range(n_entries):
 
-		# Read individual entries
-		for i in range(n_entries):
+            # Calculate the half frame
+            half_frames[i] = float(i)/deinterlace_flag
 
-			# Calculate the half frame
-			half_frames[i] = float(i)/deinterlace_flag
+            # Read the summed field intensity
+            intensity_array[i] = int(np.fromfile(fid, dtype=np.uint32, count = 1))
 
-			# Read the summed field intensity
-			intensity_array[i] = int(np.fromfile(fid, dtype=np.uint32, count = 1))
+        return half_frames, intensity_array
 
+def readFieldIntensitiesBytes(bytes: io.BytesIO, deinterlace=False):
+    # Read the number of entries
+    bytes.seek(0)
+    n_entries = int(np.frombuffer(bytes.read(2), dtype=np.uint16, count = 1))
 
-		return half_frames, intensity_array
+    intensity_array = np.zeros(n_entries, dtype=np.uint32)
+    half_frames = np.zeros(n_entries)
+
+    if deinterlace:
+        deinterlace_flag = 2.0
+    else:
+        deinterlace_flag = 1.0
+
+    # Read individual entries
+    for i in range(n_entries):
+
+        # Calculate the half frame
+        half_frames[i] = float(i)/deinterlace_flag
+
+        # Read the summed field intensity
+        intensity_array[i] = int(np.frombuffer(bytes.read(4), dtype=np.uint32, count = 1))
+
+    return half_frames, intensity_array
