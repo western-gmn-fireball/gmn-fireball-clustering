@@ -7,10 +7,12 @@ import os
 import pandas as pd
 import datetime
 from scipy import signal
+from concurrent.futures import ThreadPoolExecutor
 
 from ..utils import fieldsum_handlers as fh
 from ..dataclasses.models import StationData, ProcessedStationData    
 
+# TODO: change from default 25
 FPS = 25 # FPS of camera, assumed to be 25
 
 def ingestStationData(fieldsums_path: str):
@@ -23,8 +25,14 @@ def ingestStationData(fieldsums_path: str):
     datapoints = []
     station_data = StationData(datetimes=[], intensities=[])
 
+    try:
+        fieldsum_files = os.listdir(fieldsums_path)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        return station_data
+
     # Iterate through fieldsum files
-    for f in os.listdir(fieldsums_path):
+    for f in fieldsum_files:
         # Get starting timestamp and fieldsum data
         timestamp = fh.filenameToDatetime(f)
         half_frames, intensity_arr = fh.readFieldIntensitiesBin(fieldsums_path, f)
@@ -53,8 +61,12 @@ def ingestFRFiles(fr_file_path: str):
     Returns:
         List[datetime]: A list of datetime objects derived from filenames.
     """
-    with open(fr_file_path, 'r') as file:
-        fr_files = [line.strip('./') for line in file]
+    try:
+        with open(fr_file_path, 'r') as file:
+            fr_files = [line.strip('./') for line in file]
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        return []
     fr_timestamps = [fh.filenameToDatetime(i) for i in fr_files]
     return fr_timestamps
 
@@ -69,6 +81,9 @@ def preprocessFieldsums(station_data: StationData, avg_window=30, std_window=30)
     Returns:
         ProcessedStationData: A ProcessedStationData object.
     '''
+    if len(station_data.intensities) == 0:
+        return ProcessedStationData([], [], [], [])
+
     # Convert station data to dataframe
     df = pd.DataFrame({ 
         'datetimes': station_data.datetimes,

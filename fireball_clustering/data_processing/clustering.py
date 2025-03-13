@@ -20,6 +20,8 @@ def identifyFireballs(station_name: str, station_data: ProcessedStationData, sav
         station_data (dict): Dictionary with processed station data.
         save_to_db (bool): If True, saves the fireball data to the database.
     '''
+    if len(station_data.datetimes) == 0: return [] 
+    
     fireballs = []
 
     # Modify into feature space
@@ -48,11 +50,12 @@ def identifyFireballs(station_name: str, station_data: ProcessedStationData, sav
             event = []
     
     # Add fireball events to the DB
-    fireball_ids = db_writes.insertFireballs([(station_name, 
-                                datetime.datetime.isoformat(start_time), 
-                                datetime.datetime.isoformat(end_time)) 
+    fireball_ids = db_writes.insertFireballs([(station_name,
+                                datetime.datetime.isoformat(start_time),
+                                datetime.datetime.isoformat(end_time))
                                 for start_time, end_time, station_name in fireballs])
     
+    # TODO: create better method for returning fireballs without getting them from the db
     # Convert to fireball dataclass
     for i in range(len(fireballs)):
         fireballs[i].append(fireball_ids[i])
@@ -77,6 +80,8 @@ def filterFireballsWithFR(fireballs: list[Fireball], fr_timestamps: list[datetim
     Returns:
         list[fireball] Candidate fireballs filtered based on FR events
     '''
+    if len(fr_timestamps) == 0: return []
+
     candidates: list[Fireball] = []
     for fireball in fireballs:
         start_time = fireball.start_time
@@ -100,6 +105,7 @@ def filterFireballsWithFR(fireballs: list[Fireball], fr_timestamps: list[datetim
 
 # TODO: write clusters to DB
 # TODO: clean function up
+# TODO: dataclass for return values?
 def clusterFireballs(fireballs: list[Fireball]):
     '''
     Clusters fireballs using a 2 stage approach:

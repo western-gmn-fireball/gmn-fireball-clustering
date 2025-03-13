@@ -86,7 +86,7 @@ def insertStations():
     if response.status_code == 200:
         station_metadata = response.json()
     else:
-        raise f'Could not fetch station metadata: {response.status_code}'
+        raise ConnectionError
     
     filtered_metadata = []
     for station, times in station_metadata.items():
