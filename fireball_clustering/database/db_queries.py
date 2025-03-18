@@ -5,7 +5,10 @@
 '''
 import sqlite3
 import datetime
-import numpy as np
+import pickle
+from datetime import datetime
+
+from fireball_clustering.dataclasses.models import StationData
 
 def getStations(station_ids):
     '''
@@ -26,30 +29,39 @@ def getStations(station_ids):
     res = [station for station in stations]
     return res
 
-def getFieldsumsByDate(date):
-    '''
-    Fetches all fieldsum arrays for a given date in iso format.
-
-    Args:
-        date (string): A string of the date to be fetched in ISO YYYY-MM-DD format.
-
-    Returns:
-        An array of tuples with form (station_id, date, fieldsum_array)
-    '''
-    # Input validation
-    try:
-        datetime.date.fromisoformat(date)
-    except ValueError:
-        return None
-
-    QUERY = f"SELECT * FROM fieldsums WHERE date LIKE '{date}%'"
-
+def getStationDataByDate(station_id: str, date: datetime) -> StationData:
     conn = sqlite3.connect('gmn_fireball_clustering.db')
     cur = conn.cursor()
-    rows = cur.execute(QUERY)
-    fieldsum_db_data = [row for row in rows]
-    fieldsum_data = [(station_id, date, np.frombuffer(fs_array)) for _, station_id, date, fs_array in fieldsum_db_data]
-    return fieldsum_data
+    cur.execute('SELECT * from fieldsums WHERE station_id = ? AND date = ?', (station_id, date.isoformat()))
+    row = cur.fetchone()
+    
+    if row:
+        dts = pickle.loads(row[3])
+        ints = pickle.loads(row[4])
+    else:
+        raise ValueError(f"No fieldsum data found for {station_id} - {date}")
+
+    return StationData(datetimes=dts, intensities=ints)
+
+def getFrTimestampsByDate(station_id: str, date: datetime) -> list:
+    '''
+    Gets all fr_timestamps for a given station on a given day.
+
+    Args:
+        station_id: str of station id
+        date: datetime object for earliest time of the given day (00:00:00)
+    '''
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cur = conn.cursor()
+    cur.execute('SELECT * from fr_files WHERE station_id = ? AND date = ?', (station_id, date.isoformat()))
+    row = cur.fetchone()
+    
+    if row:
+        fr_timestamps = pickle.loads(row[2])
+    else:
+        raise ValueError(f"No fr_file data found for {station_id} - {date}")
+
+    return fr_timestamps
 
 def getFireballsByDate(date):
     '''

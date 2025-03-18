@@ -4,7 +4,12 @@
     Author: Armaan Mahajan
 '''
 
+import numpy as np
 import sqlite3
+import pickle
+from datetime import datetime
+
+from fireball_clustering.dataclasses.models import StationData 
 
 def insertStations(stations):
     '''
@@ -19,16 +24,31 @@ def insertStations(stations):
     conn.commit()
     conn.close()
 
-def insertFieldsums(fieldsums):
+def insertFieldsums(station_id: str, date: datetime, station_data: StationData):
     '''
     Inserts 1+ fieldsum arrays into the fieldsums table of the database.
 
     Args:
-        fieldsums (list of tuples): List of tuples with format (station_id, date, np.array(fieldsums))  
+        station_id
+        date: the earliest datetime object for the date being passed (00:00:00)
     '''
+    dts = pickle.dumps([dt.isoformat() for dt in station_data.datetimes])
+    ints = pickle.dumps(station_data.intensities)
+
     conn = sqlite3.connect('gmn_fireball_clustering.db')
     cursor = conn.cursor()
-    cursor.executemany('INSERT INTO fieldsums (station_id, date, fieldsums) VALUES(?, ?, ?)', fieldsums)
+    cursor.execute('INSERT INTO fieldsums (station_id, date, datetimes, intensities) VALUES(?, ?, ?, ?)', 
+                   (station_id, date.isoformat(), dts, ints))
+    conn.commit()
+    conn.close()
+
+def insertFRs(station_id: str, date: datetime, fr_timestamps: list):
+    fr_dump = pickle.dumps(fr_timestamps)
+
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO fr_files (station_id, date, fr_timestamps) VALUES(?, ?, ?)', 
+                   (station_id, date.isoformat(), fr_dump))
     conn.commit()
     conn.close()
 
@@ -53,7 +73,6 @@ def insertFireballs(fireballs):
     conn.close()
 
     return res
-
 
 def insertClusters(clusters):
     '''
