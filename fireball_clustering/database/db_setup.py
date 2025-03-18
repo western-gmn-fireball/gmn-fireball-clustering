@@ -42,12 +42,21 @@ def initializeEmptyDatabase():
                    Create TABLE fieldsums(
                         fieldsum_id INTEGER PRIMARY KEY,
                         station_id TEXT NOT NULL,
-                        fieldsums BLOB NOT NULL,
+                        date TEXT NOT NULL,
+                        datetimes BLOB NOT NULL,
+                        intensities BLOB NOT NULL,
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
+                   )
+                   """)
+    cursor.execute("""
+                   Create TABLE fr_files(
+                        fr_id INTEGER PRIMARY KEY,
+                        station_id TEXT NOT NULL,
+                        fr_timestamps BLOB NOT NULL,
                         date TEXT NOT NULL,
                         FOREIGN KEY (station_id) REFERENCES stations(station_id)
                    )
-                   """
-    )
+                   """)
     cursor.execute("""
                    CREATE TABLE fireballs(
                         fireball_id INTEGER PRIMARY KEY,

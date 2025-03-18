@@ -11,12 +11,13 @@ from fireball_clustering.dataclasses.models import StationData
 
 FPS = 25
 
-def ingestFromTarball(path: str) -> StationData:
+def ingestFromTarball(path: str) -> tuple[StationData, list[str]]:
     if not os.path.exists(path):
         raise FileNotFoundError
     
     datapoints = []
     station_data = StationData(datetimes=[], intensities=[])
+    fr_files = []
 
     with tarfile.open(path, 'r:bz2') as tarball:
         for member in tarball.getmembers():
@@ -36,6 +37,10 @@ def ingestFromTarball(path: str) -> StationData:
                             timestamp += datetime.timedelta(seconds=1/FPS)
                             datapoints.append((timestamp, intensity_arr[i]))
 
+            if member.name.startswith('./FR'):
+                fr_files.append(member.name)
+
+
     # Sort data by time 
     datapoints.sort(key = lambda x: x[0])
 
@@ -43,4 +48,4 @@ def ingestFromTarball(path: str) -> StationData:
     station_data.datetimes = [x[0] for x in datapoints]
     station_data.intensities = [x[1] for x in datapoints]
 
-    return station_data
+    return (station_data, fr_files)
