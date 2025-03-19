@@ -10,7 +10,14 @@ from datetime import datetime
 
 from fireball_clustering.dataclasses.models import StationData
 
-def getStations(station_ids):
+def getAllStations():
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cur = conn.cursor()
+    stations = cur.execute('SELECT * FROM stations')
+    res = [row for row in stations]
+    return res
+
+def getStationsDataByID(station_ids):
     '''
     Fetches the station data from the database for a given set of station IDs.
 
@@ -42,6 +49,18 @@ def getStationDataByDate(station_id: str, date: datetime) -> StationData:
         raise ValueError(f"No fieldsum data found for {station_id} - {date}")
 
     return StationData(datetimes=dts, intensities=ints)
+
+def getStationsWithinRadius(station_id: str) -> list[str]:
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM radius WHERE station_id = ?', (station_id,))
+    row = cur.fetchone()
+    if row:
+        stations = pickle.loads(row)
+    else:
+        raise ValueError(f"No stations within radius information found for: {station_id}")
+
+    return stations
 
 def getFrTimestampsByDate(station_id: str, date: datetime) -> list:
     '''

@@ -24,6 +24,30 @@ def insertStations(stations):
     conn.commit()
     conn.close()
 
+def insertRadius(radii: dict):
+    '''
+    Args:
+        radii: dictionary of station_id: list<stations_within_radius>
+    '''
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cursor = conn.cursor()
+    to_insert = [(k, pickle.dumps(v)) for k, v in radii.items()]
+    cursor.executemany('INSERT INTO radius (station_id, stations_within_radius) VALUES(?, ?)', to_insert)
+    conn.commit()
+    conn.close()
+
+def updateRadius(station_id, stations_within_radius):
+    '''
+    Args:
+        station_id: station ID that the stations within radius need to be updated for
+        stations_within_radius: list of stations within a radius of station with station id
+    '''
+    conn = sqlite3.connect('gmn_fireball_clustering.db')
+    cursor = conn.cursor()
+    cursor.executemany('UPDATE radius SET stations_within_radius = ? WHERE station_id = ?', (pickle.dumps(stations_within_radius), station_id))
+    conn.commit()
+    conn.close()
+
 def insertFieldsums(station_id: str, date: datetime, station_data: StationData):
     '''
     Inserts 1+ fieldsum arrays into the fieldsums table of the database.

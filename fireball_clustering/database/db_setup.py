@@ -24,6 +24,8 @@ import requests
 import datetime
 
 from . import db_writes
+from . import db_queries
+from fireball_clustering.utils.math import stationsWithinRadius
 
 def initializeEmptyDatabase():
     # Initialize connection
@@ -77,8 +79,23 @@ def initializeEmptyDatabase():
                    CREATE TABLE clusters_fireballs(
                         cluster_id INTEGER NOT NULL,
                         fireball_id INTEGER NOT NULL,
-                        FOREIGN KEY (cluster_id) REFERENCES clusters(cluster_id)
+                        FOREIGN KEY (cluster_id) REFERENCES clusters(cluster_id),
                         FOREIGN KEY (fireball_id) REFERENCES fireballs(fireball_id)
+                   )
+                   """)
+    cursor.execute("""
+                   CREATE TABLE analysis(
+                        station_id TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        status TEXT CHECK(status IN ('ingested', 'processed')),
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
+                   )
+                   """)
+    cursor.execute("""
+                   CREATE TABLE radius(
+                        station_id TEXT NOT NULL,
+                        stations_within_radius BLOB NOT NULL,
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
                    )
                    """)
     con.commit()
@@ -112,3 +129,12 @@ def insertStations():
         filtered_metadata.append((station, lat, lon))
     
     db_writes.insertStations(filtered_metadata)
+
+def insertRadius():
+    stations = db_queries.getAllStations()
+    radius_map = {}
+    for station_id, lat, lng in stations:
+        stations_within_radius = stationsWithinRadius(stations, lat, lng, 1000)
+        radius_map[station_id] = stations_within_radius
+
+    db_writes.insertRadius(radius_map)
