@@ -29,7 +29,7 @@ class FileWatcher():
         # File event watching and handling (producer)
         self.event_handler = UploadHandler(self.queue)
         self.observer = Observer()
-        self.observer.schedule(self.event_handler, "/home/armaan/school/Thesis/gmn-fireball-clustering/", recursive=True)
+        self.observer.schedule(self.event_handler, parameters.LOCAL, recursive=True)
         self.observer.start()
 
         # Queue handler

@@ -19,3 +19,9 @@ MIN_CAMERAS = 1/3
 
 # Min number of station observers per fireball
 MIN_OBSERVERS = 3
+
+# Path to the uploaded station files
+ON_SERVER = False
+LOCAL = "/home/armaan/school/Thesis/gmn-fireball-clustering/"
+SERVER = "/srv/meteor-ro/rms/"
+PATH = SERVER if ON_SERVER else LOCAL
