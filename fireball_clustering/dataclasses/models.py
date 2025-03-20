@@ -34,3 +34,5 @@ class Fireball:
     start_time: datetime
     end_time: datetime
     id: int
+
+

@@ -13,6 +13,7 @@ from fireball_clustering.dataclasses.models import StationData
 from fireball_clustering.database.db_connection import Database
 from fireball_clustering.utils.fieldsum_handlers import filenameToDatetime
 from fireball_clustering import parameters
+from fireball_clustering.dataclasses.models import Fireball
  
 def getAllStations() -> list[tuple[str, float, float]]:
     '''
@@ -84,7 +85,7 @@ def getIngestedStations() -> list[tuple[str, datetime]]:
     return ingested_stations
 
 # TODO: clean this up
-def getIngestedRadii() -> list[list[tuple[str, datetime]]]:
+def getIngestedRadii() -> list[list[tuple[str, str]]]:
     '''
     Gets all stations that have all radius stations ingested.
 
@@ -158,26 +159,28 @@ def getFrTimestampsByDate(station_id: str, date: datetime) -> list[datetime]:
     
     return fr_datetimes
 
-# def getFireballsByDate(date):
-#     '''
-#     Fetches all recorded fireball candidates for a given date in iso format.
-#
-#     Args:
-#         date (string): A string of the date to be fetched in ISO YYYY-MM-DD format.
-#
-#     Returns:
-#         An array of tuples that match the given date.
-#     '''
-#     # Input validation
-#     try:
-#         datetime.date.fromisoformat(date)
-#     except ValueError:
-#         return None
-#
-#     QUERY = f"SELECT * FROM fireballs WHERE start_time LIKE '{date}%'"
-#
-#     conn = sqlite3.connect('gmn_fireball_clustering.db')
-#     cur = conn.cursor()
-#     fireballs = cur.execute(QUERY)
-#     res = [fireball for fireball in fireballs]
-#     return res
+def getFireballsByStationDate(station_id: str, date: datetime) -> list[Fireball]:
+    '''
+    Fetches all recorded fireball candidates for a given date in iso format.
+
+    Args:
+        date (string): A string of the date to be fetched in ISO YYYY-MM-DD format.
+
+    Returns:
+        An array of Fireball objects for the given station and date
+    '''
+    db = Database()
+    conn = db.conn
+    cur = db.cur
+    cur.execute('SELECT * FROM candidate_fireballs WHERE station_id=? AND DATE(start_time)=?', 
+                (station_id, datetime.strftime(date, '%Y-%m-%d')))
+    rows = cur.fetchall()
+    fireballs: list[Fireball] = []
+    for row in rows:
+        fireballs.append(Fireball(
+            id=row[0],
+            station_name=row[1],
+            start_time=datetime.fromisoformat(row[2]),
+            end_time=datetime.fromisoformat(row[3])
+        ))
+    return fireballs

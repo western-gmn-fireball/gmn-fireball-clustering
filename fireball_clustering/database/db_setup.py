@@ -69,6 +69,15 @@ def initializeEmptyDatabase():
                    )
                    """)
     cursor.execute("""
+                   CREATE TABLE candidate_fireballs(
+                        fireball_id INTEGER PRIMARY KEY,
+                        station_id TEXT NOT NULL,
+                        start_time TEXT,
+                        end_time TEXT,
+                        FOREIGN KEY (station_id) REFERENCES stations(station_id)
+                   )
+                   """)
+    cursor.execute("""
                    CREATE TABLE clusters(
                         cluster_id INTEGER PRIMARY KEY,
                         start_time TEXT,

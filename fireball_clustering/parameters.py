@@ -14,5 +14,8 @@ STD_WINDOW = 30
 FR_EVENT_PROXIMITY = 10
 
 # Min number of stations we must have data for 
-# to begin analysis (within 1000km)
+# to begin analysis (within 1000km) 
 MIN_CAMERAS = 1/3
+
+# Min number of station observers per fireball
+MIN_OBSERVERS = 3

@@ -149,6 +149,30 @@ def insertFireballs(fireballs):
 
     return res
 
+def insertFireballs(fireballs):
+    '''
+    Inserts one or more fireballs into the fireballs table of the database.
+
+    Args:
+        fireballs (list of tuples): List of tuples with following format(station_id, start_time, end_time))
+    
+    Returns:
+        Array of primary keys for each fireball in the same order as they were inserted.
+    '''
+    res = [] # Array of IDs
+
+    db = Database()
+    conn = db.conn
+    cursor = db.cur
+    with db.lock:
+        for fireball in fireballs:
+            cursor.execute('INSERT INTO candidate_fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', fireball)
+            res.append(cursor.lastrowid)
+        conn.commit()
+        conn.close()
+
+    return res
+
 def insertClusters(clusters):
     '''
     Inserts 1+ cluster(s) into the clusters table of the database and updates FireballsClusters to reflect the relationship.
@@ -161,5 +185,8 @@ def insertClusters(clusters):
         - end_time (TEXT): ISO8601 representation of cluster end_time
     
     '''
-    conn = sqlite3.connect('gmn_fireball_clustering.db')
-    cursor = conn.cursor()
+    db = Database()
+    conn = db.conn
+    cursor = db.cur
+    with db.lock:
+        pass
