@@ -23,6 +23,7 @@ class UploadHandler(FileSystemEventHandler):
 # Starts producer(FS upload handler) and consumer(FS ingestion) threads
 class FileWatcher():
     def __init__(self) -> None:
+        print("FILEWATCHERINIT???")
         self.queue = Queue()
 
         # File event watching and handling (producer)
@@ -60,7 +61,7 @@ class QueueConsumer():
             # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
             split_path = src_path.split('_')
             station_id_path = split_path[0]
-            station_id = station_id_path.split('/')[-1]
+            station_id = station_id_path.split('/')[1]
             date_str = split_path[1]
             date_obj = datetime.strptime(date_str, '%Y%m%d')
 
@@ -75,10 +76,3 @@ class QueueConsumer():
 
     def join(self):
         self.thread.join()
-
-def main():
-    file_watcher = FileWatcher()
-    file_watcher.start_file_watcher()
-
-if __name__ == "__main__":
-    main()

@@ -25,6 +25,7 @@ def getAllStations() -> list[tuple[str, float, float]]:
     cur = db.cur
     stations = cur.execute('SELECT * FROM stations')
     res = [row for row in stations]
+    conn.close()
     return res
 
 def getStationsDataByID(station_ids):
@@ -44,6 +45,7 @@ def getStationsDataByID(station_ids):
     cur = db.cur
     stations = cur.execute(QUERY, station_ids)
     res = [station for station in stations]
+    conn.close()
     return res
 
 def getStationDataByDate(station_id: str, date: datetime) -> StationData:
@@ -59,6 +61,7 @@ def getStationDataByDate(station_id: str, date: datetime) -> StationData:
     else:
         raise ValueError(f"No fieldsum data found for {station_id} - {date}")
 
+    conn.close()
     return StationData(datetimes=dts, intensities=ints)
 
 def getStationsWithinRadius(station_id: str) -> list[str]:
@@ -73,6 +76,7 @@ def getStationsWithinRadius(station_id: str) -> list[str]:
     else:
         raise ValueError(f"No stations within radius information found for: {station_id}")
 
+    conn.close()
     return stations
 
 def getIngestedStations() -> list[tuple[str, datetime]]:
@@ -82,6 +86,7 @@ def getIngestedStations() -> list[tuple[str, datetime]]:
     cur.execute('SELECT * FROM analysis WHERE status="ingested"')
     rows = cur.fetchall()
     ingested_stations = [(station_id, datetime.fromisoformat(date)) for station_id, date, _ in rows]
+    conn.close()
     return ingested_stations
 
 # TODO: clean this up
@@ -122,6 +127,7 @@ def getRadiusStations(station_id: str):
     cur = db.cur
     cur.execute('SELECT * FROM radius WHERE station_id=?', (station_id,))
     row = cur.fetchone()
+    conn.close()
     if row:
         return pickle.loads(row[1])
     else:
@@ -135,6 +141,7 @@ def isProcessed(station_id: str, date: str) -> bool:
                 (station_id, date))
     row = cur.fetchone()
     print(row)
+    conn.close()
     return True if row[2] == 'processed' else False
 
 def getFrTimestampsByDate(station_id: str, date: datetime) -> list[datetime]:
@@ -156,6 +163,8 @@ def getFrTimestampsByDate(station_id: str, date: datetime) -> list[datetime]:
         fr_datetimes = [filenameToDatetime(file.split('/')[1]) for file in fr_files]
     else:
         raise ValueError(f"No fr_file data found for {station_id} - {date}")
+
+    conn.close()
     
     return fr_datetimes
 
@@ -183,4 +192,5 @@ def getFireballsByStationDate(station_id: str, date: datetime) -> list[Fireball]
             start_time=datetime.fromisoformat(row[2]),
             end_time=datetime.fromisoformat(row[3])
         ))
+    conn.close()
     return fireballs

@@ -102,6 +102,8 @@ def filterFireballsWithFR(fireballs: list[Fireball], fr_timestamps: list[datetim
         MAX_DELTA = datetime.timedelta(seconds=parameters.FR_EVENT_PROXIMITY)
         if left_delta <= MAX_DELTA or (right_delta and right_delta <= MAX_DELTA):
             candidates.append(fireball)
+
+    db_writes.insertCandidateFireballs(candidates)
         
     return candidates
 
@@ -188,13 +190,11 @@ def clusterFireballs(fireballs: list[Fireball]):
         'start_iso_str': lambda x: min(list(x)),
         'end_iso_str': lambda x: max(list(x)),
     })
-    print(sql_st_clusters_collapsed)
-    sql_st_clusters_collapsed.to_csv('./csv/collapsed.csv', index=False)
 
     db = db_connection.Database()
     conn = db.conn
     with db.lock:
         sql_st_clusters_collapsed.to_sql('pandas_clusters', conn, if_exists='append', index=False,
                                          dtype={'cluster_id': 'INTEGER PRIMARY KEY AUTOINCREMENT','station_id': 'TEXT', 'start_iso_str': 'TEXT', 'end_iso_str': 'TEXT'})
-
+    db.conn.close()
     return spatiotemporal_clusters 

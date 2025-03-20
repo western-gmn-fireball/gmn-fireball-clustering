@@ -71,16 +71,22 @@ class Analysis():
         self.queue = Queue()
         self.producer = AnalysisProducer(self.queue)
         self.consumer = AnalysisConsumer(self.queue)
+
+    # def start(self):
+    #     try:
+    #         while True:
+    #             time.sleep(1)
+    #     finally:
+    #         self.producer.join()
+    #         self.consumer.join()
+
+    def start(self):
         self.producer.start()
         self.consumer.start()
 
-    def start(self):
-        try:
-            while True:
-                time.sleep(1)
-        finally:
-            self.producer.join()
-            self.consumer.join()
+    def join(self):
+        self.producer.join()
+        self.consumer.join()
 
 def main():
     analysis = Analysis()

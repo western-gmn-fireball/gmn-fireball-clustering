@@ -8,7 +8,7 @@ import sqlite3
 import pickle
 from datetime import datetime
 
-from fireball_clustering.dataclasses.models import StationData 
+from fireball_clustering.dataclasses.models import StationData, Fireball
 from fireball_clustering.database.db_connection import Database
 
 def insertStations(stations):
@@ -149,7 +149,7 @@ def insertFireballs(fireballs):
 
     return res
 
-def insertFireballs(fireballs):
+def insertCandidateFireballs(fireballs: list[Fireball]):
     '''
     Inserts one or more fireballs into the fireballs table of the database.
 
@@ -166,7 +166,8 @@ def insertFireballs(fireballs):
     cursor = db.cur
     with db.lock:
         for fireball in fireballs:
-            cursor.execute('INSERT INTO candidate_fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', fireball)
+            cursor.execute('INSERT INTO candidate_fireballs (station_id, start_time, end_time) VALUES(?, ?, ?)', 
+                           (fireball.station_name, fireball.start_time.isoformat(), fireball.end_time.isoformat()))
             res.append(cursor.lastrowid)
         conn.commit()
         conn.close()
@@ -190,3 +191,4 @@ def insertClusters(clusters):
     cursor = db.cur
     with db.lock:
         pass
+    conn.close()

@@ -10,6 +10,7 @@ def run_watchdog():
 def run_analysis_pipeline():
     analysis = analysis_pipeline.Analysis()
     analysis.start()
+    analysis.join()
 
 if __name__ == "__main__":
     p1 = multiprocessing.Process(target=run_watchdog)
