@@ -89,7 +89,7 @@ def preprocessFieldsums(station_data: StationData, avg_window=30, std_window=30)
         'datetimes': station_data.datetimes,
         'intensities': station_data.intensities,
     })
-    df['datetimes'] = pd.to_datetime(df['datetimes'])
+    df['datetimes'] = pd.to_datetime(df['datetimes'], format='ISO8601')
     df = df.set_index('datetimes')
 
     # Bandpass Filter

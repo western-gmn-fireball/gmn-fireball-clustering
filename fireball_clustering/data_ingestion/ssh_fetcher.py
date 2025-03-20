@@ -12,6 +12,8 @@ import os
 import shutil
 import time
 
+from fireball_clustering.database import db_queries
+
 def _getSftpClient():
     HOST = os.getenv('GMN_HOST')
     USER = os.getenv('GMN_USER')
@@ -125,40 +127,44 @@ def _splitNameDate(strings):
     return res
 
 def main():
-    stations = [
-        "AU0006",
-        "AU0007",
-        "AU0009",
-        "AU000A",
-        "AU000C",
-        "AU000X",
-        "AU000Y",
-        "AU0010",
-        "AU000Q",
-        "AU004B",
-        "AU004K",
-        "AU0047",
-        "AU000D",
-        "AU000Z",
-        "AU001A",
-        "AU0038",
-        "AU000E",
-        "AU000F",
-        "AU000V",
-        "AU000U",
-        "AU000W",
-        "AU000G",
-        "AU0002",
-        "AU0003",
-    ]
-    
+    # stations = [
+    #     "AU0006",
+    #     "AU0007",
+    #     "AU0009",
+    #     "AU000A",
+    #     "AU000C",
+    #     "AU000X",
+    #     "AU000Y",
+    #     "AU0010",
+    #     "AU000Q",
+    #     "AU004B",
+    #     "AU004K",
+    #     "AU0047",
+    #     "AU000D",
+    #     "AU000Z",
+    #     "AU001A",
+    #     "AU0038",
+    #     "AU000E",
+    #     "AU000F",
+    #     "AU000V",
+    #     "AU000U",
+    #     "AU000W",
+    #     "AU000G",
+    #     "AU0002",
+    #     "AU0003",
+    # ]
+    #
+    # dates = [
+    #     '20221114',
+    #     '20241212',
+    #     '20240506',
+    #     '20221204',
+    #     '20230319',
+    #     '20221107',
+    # ]
+    stations = db_queries.getRadiusStations('AU000X')
     dates = [
-        '20221114',
-        '20241212',
-        '20240506',
-        '20221204',
-        '20230319',
-        '20221107',
+        '20221114'
     ]
     
     all_nights = []

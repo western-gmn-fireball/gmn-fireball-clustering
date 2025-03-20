@@ -1,6 +1,7 @@
 from fireball_clustering.dataclasses.models import StationData, ProcessedStationData, Fireball
 from fireball_clustering.data_processing.preprocessing import ingestFRFiles, ingestStationData, preprocessFieldsums
 from fireball_clustering.data_processing.clustering import filterFireballsWithFR, identifyFireballs, clusterFireballs
+from fireball_clustering.database import db_queries
 from fireball_clustering.database import db_setup
 
 import datetime
@@ -21,7 +22,13 @@ class Perseus:
     def getStationsWithinRadius(self):
         # Util function for getting list of stations within a certain radius of a station
         pass
+        
+    def ingestFieldsumsDB(self, station_id: str, date: datetime.datetime) -> StationData:
+        return db_queries.getStationDataByDate(station_id, date)
 
+    def ingestFrDB(self, station_id: str, date: datetime.datetime) -> list[datetime.datetime]:
+        return db_queries.getFrTimestampsByDate(station_id, date)
+    
     def ingestFieldsums(self, station_id: str, date: datetime.datetime) -> StationData:
         """
         Ingest field sum data for a specific station on a given date.
