@@ -117,7 +117,7 @@ def clusterFireballs(fireballs: list[Fireball]):
     '''
     # Get stations coordinates in radians map station_id to them
     stations = list(set([fireball.station_name for fireball in fireballs]))
-    stations_with_coords = db_queries.getStations(stations)
+    stations_with_coords = db_queries.getStationsDataByID(stations)
     stations_coords_map = {}
     for station in stations_with_coords:
         stations_coords_map[station[0]] = np.radians([station[1], station[2]])

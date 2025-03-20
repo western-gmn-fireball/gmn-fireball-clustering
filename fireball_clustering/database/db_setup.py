@@ -87,7 +87,7 @@ def initializeEmptyDatabase():
                    CREATE TABLE analysis(
                         station_id TEXT NOT NULL,
                         date TEXT NOT NULL,
-                        status TEXT CHECK(status IN ('ingested', 'processed')),
+                        status TEXT CHECK(status IN ('ingested', 'processing', 'processed')),
                         FOREIGN KEY (station_id) REFERENCES stations(station_id)
                    )
                    """)
@@ -138,3 +138,8 @@ def insertRadius():
         radius_map[station_id] = stations_within_radius
 
     db_writes.insertRadius(radius_map)
+
+if __name__ == "__main__":
+    initializeEmptyDatabase()
+    insertStations()
+    insertRadius()

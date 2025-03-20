@@ -1,10 +1,11 @@
 __pycache__/
 venv/
-gmn_fireball_clustering.db
+gmn_fireball_clustering.db*
 station_data/
 pickle/
 *.csv
 fr_files/
 fieldsums/
 plots/
-tmp/
+tmp*/
+tmp*

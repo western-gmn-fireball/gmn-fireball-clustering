@@ -12,3 +12,7 @@ STD_WINDOW = 30
 
 # Temporal Proximity to FR events in seconds
 FR_EVENT_PROXIMITY = 10
+
+# Min number of stations we must have data for 
+# to begin analysis (within 1000km)
+MIN_CAMERAS = 1/3
