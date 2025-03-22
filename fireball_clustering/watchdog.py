@@ -8,6 +8,7 @@ from watchdog.observers import Observer
 
 from fireball_clustering.data_ingestion.local_fetcher import ingestFromTarball
 from fireball_clustering.database.db_writes import insertFRs, insertFieldsums, setDataToIngested
+from fireball_clustering import parameters
 
 # Handler for FS upload events
 class UploadHandler(FileSystemEventHandler):
