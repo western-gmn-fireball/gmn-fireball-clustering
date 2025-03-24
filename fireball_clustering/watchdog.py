@@ -59,14 +59,21 @@ class FileWatcherProducer():
             time.sleep(5)
             # Check for new files by comparing to most recent upload
             new_latest_timestamp = self.latest_timestamp
-            for root, _, files in os.walk(parameters.PATH):
-                for file in files:
-                    path = os.path.join(root, file)
-                    stat = os.stat(path)
-                    if path.endswith('tar.bz2') and stat.st_mtime > self.latest_timestamp:
-                        self.queue.put(path)
-                        new_latest_timestamp = max(new_latest_timestamp, stat.st_mtime)
+
+            for path, mtime in self.fast_scan(parameters.PATH):
+                if path.endswith('tar.bz2') and mtime > self.latest_timestamp:
+                    self.queue.put(path)
+                    new_latest_timestamp = mtime
+
             self.latest_timestamp = new_latest_timestamp
+
+    def fast_scan(self, dir):
+        with os.scandir(dir) as it:
+            for entry in it:
+                if entry.is_file():
+                    yield entry.path, entry.stat().st_mtime
+                if entry.is_dir():
+                    yield from self.fast_scan(entry.path)
 
     def start(self):
         self.thread.start()
