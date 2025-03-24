@@ -29,9 +29,11 @@ class FileWatcher():
         self.queue = Queue()
 
         # File event watching and handling (producer)
-        self.event_handler = UploadHandler(self.queue)
-        self.observer = Observer()
-        self.observer.schedule(self.event_handler, parameters.PATH, recursive=True)
+        # self.event_handler = UploadHandler(self.queue)
+        # self.observer = Observer()
+        # self.observer.schedule(self.event_handler, parameters.PATH, recursive=True)
+        # self.observer.start()
+        self.observer = FileWatcherProducer(self.queue)
         self.observer.start()
 
         # Queue handler
@@ -43,7 +45,7 @@ class FileWatcher():
             while True:
                 time.sleep(1)
         finally:
-            self.observer.stop()
+            # self.observer.stop()
             self.observer.join()
             self.consumer.join()
 
@@ -66,6 +68,12 @@ class FileWatcherProducer():
                         self.queue.put(path)
                         new_latest_timestamp = max(new_latest_timestamp, stat.st_mtime)
             self.latest_timestamp = new_latest_timestamp
+
+    def start(self):
+        self.thread.start()
+
+    def join(self):
+        self.thread.join()
 
 class QueueConsumer():
     def __init__(self, queue: Queue) -> None:
