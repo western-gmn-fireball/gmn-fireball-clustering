@@ -12,7 +12,6 @@ class AnalysisProducer():
 
     def producer_loop(self):
         while True:
-            print('Checking for ingested stations...')
             time.sleep(10)
             for stations_to_process in db_queries.getIngestedRadii():
                 self.queue.put(stations_to_process)
@@ -32,7 +31,6 @@ class AnalysisConsumer():
 
     def consumer_loop(self):
         while True:
-            print('Checking for stations in the queue...')
             time.sleep(10)
             stations_to_process = self.queue.get() if not self.queue.empty() else None
             if stations_to_process == None:
@@ -42,7 +40,7 @@ class AnalysisConsumer():
             for station_date in stations_to_process:
                 station_id, date = station_date
                 print(station_id, date)
-                print(f'Processing Station: {station_id} for Date: {date}')
+                print(f'[ANALYSIS] Processing Station: {station_id} for Date: {date}')
                 if db_queries.isProcessed(station_id, date): 
                     all_candidates.extend(db_queries.getFireballsByStationDate(station_id, date))
 

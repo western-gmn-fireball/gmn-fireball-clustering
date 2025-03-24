@@ -20,12 +20,11 @@ class UploadHandler(FileSystemEventHandler):
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
         if isinstance(event.src_path, str) and event.src_path.endswith(".tar.bz2"):
             self.queue.put(event.src_path)
-            print(f"Added {event.src_path} to the queue for ingestion.")
+            print(f"[WATCHDOG] Added {event.src_path} to the queue for ingestion.")
 
 # Starts producer(FS upload handler) and consumer(FS ingestion) threads
 class FileWatcher():
     def __init__(self) -> None:
-        print("FILEWATCHERINIT???")
         self.queue = Queue()
 
         # File event watching and handling (producer)
@@ -85,7 +84,7 @@ class QueueConsumer():
             src_path = self.queue.get(timeout=10) if not self.queue.empty() else None
             if src_path == None:
                 continue
-            print(f'Ingesting files from {src_path}')
+            print(f'[WATCHDOG] Ingesting files from {src_path}')
             station_data, fr_files = ingestFromTarball(src_path)
             
             # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
