@@ -60,20 +60,23 @@ class FileWatcherProducer():
             # Check for new files by comparing to most recent upload
             new_latest_timestamp = self.latest_timestamp
 
-            for path, mtime in self.fast_scan(parameters.PATH):
+            for path, mtime in self.fast_scan(parameters.PATH, self.latest_timestamp):
                 if path.endswith('tar.bz2') and mtime > self.latest_timestamp:
                     self.queue.put(path)
                     new_latest_timestamp = mtime
 
             self.latest_timestamp = new_latest_timestamp
 
-    def fast_scan(self, dir):
+    def fast_scan(self, dir, latest_timestamp):
         with os.scandir(dir) as it:
             for entry in it:
                 if entry.is_file():
                     yield entry.path, entry.stat().st_mtime
-                if entry.is_dir():
-                    yield from self.fast_scan(entry.path)
+                # Only check processed directory if it has been modified recently
+                if entry.is_dir() and entry.name.lower() == 'processed' and entry.stat().st_mtime > self.latest_timestamp:
+                    yield from self.fast_scan(entry.path, latest_timestamp)
+                elif entry.is_dir(): 
+                    yield from self.fast_scan(entry.path, latest_timestamp)
 
     def start(self):
         self.thread.start()
@@ -97,7 +100,7 @@ class QueueConsumer():
             # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
             split_path = src_path.split('_')
             station_id_path = split_path[0]
-            station_id = station_id_path.split('/')[1]
+            station_id = station_id_path.split('/')[-1]
             date_str = split_path[1]
             date_obj = datetime.strptime(date_str, '%Y%m%d')
 
