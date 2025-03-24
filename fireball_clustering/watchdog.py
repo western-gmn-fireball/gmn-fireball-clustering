@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 from queue import Queue
@@ -30,7 +31,7 @@ class FileWatcher():
         # File event watching and handling (producer)
         self.event_handler = UploadHandler(self.queue)
         self.observer = Observer()
-        self.observer.schedule(self.event_handler, parameters.LOCAL, recursive=True)
+        self.observer.schedule(self.event_handler, parameters.PATH, recursive=True)
         self.observer.start()
 
         # Queue handler
@@ -45,7 +46,27 @@ class FileWatcher():
             self.observer.stop()
             self.observer.join()
             self.consumer.join()
-        
+
+class FileWatcherProducer():
+    def __init__(self, queue: Queue) -> None:
+        self.queue = queue
+        self.thread = threading.Thread(target=self.producer_loop)
+        self.latest_timestamp = time.time()
+
+    def producer_loop(self):
+        while True:
+            time.sleep(5)
+            # Check for new files by comparing to most recent upload
+            new_latest_timestamp = self.latest_timestamp
+            for root, _, files in os.walk(parameters.PATH):
+                for file in files:
+                    path = os.path.join(root, file)
+                    stat = os.stat(path)
+                    if path.endswith('tar.bz2') and stat.st_mtime > self.latest_timestamp:
+                        self.queue.put(path)
+                        new_latest_timestamp = max(new_latest_timestamp, stat.st_mtime)
+            self.latest_timestamp = new_latest_timestamp
+
 class QueueConsumer():
     def __init__(self, queue: Queue) -> None:
         self.queue = queue
