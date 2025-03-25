@@ -59,24 +59,27 @@ class FileWatcherProducer():
             time.sleep(5)
             # Check for new files by comparing to most recent upload
             new_latest_timestamp = self.latest_timestamp
-
-            for path, mtime in self.fast_scan(parameters.PATH, self.latest_timestamp):
-                if path.endswith('tar.bz2') and mtime > self.latest_timestamp:
+            start = time.time()
+            for path, mtime in self.fast_scan(parameters.PATH):
+                if mtime > self.latest_timestamp:
                     self.queue.put(path)
                     new_latest_timestamp = mtime
-
+            print(f'[FileWatcherProducer] Execution time checking for new files is {time.time() - start} seconds')
             self.latest_timestamp = new_latest_timestamp
 
-    def fast_scan(self, dir, latest_timestamp):
+    def fast_scan(self, dir):
         with os.scandir(dir) as it:
             for entry in it:
-                if entry.is_file():
-                    yield entry.path, entry.stat().st_mtime
+                entry_stat = entry.stat()
+
+                if entry.is_file() and entry.path.endswith('tar.bz2'):
+                    yield entry.path, entry_stat.st_mtime
+                
                 # Only check processed directory if it has been modified recently
-                if entry.is_dir() and entry.name.lower() == 'processed' and entry.stat().st_mtime > self.latest_timestamp:
-                    yield from self.fast_scan(entry.path, latest_timestamp)
-                elif entry.is_dir(): 
-                    yield from self.fast_scan(entry.path, latest_timestamp)
+                if entry.is_dir() and entry.name.lower() == 'processed' and entry_stat.st_mtime > self.latest_timestamp:
+                    yield from self.fast_scan(entry.path)
+                elif entry.is_dir() and entry.name.lower() != 'processed': 
+                    yield from self.fast_scan(entry.path)
 
     def start(self):
         self.thread.start()
