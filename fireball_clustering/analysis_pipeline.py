@@ -17,7 +17,8 @@ class AnalysisProducer():
             for stations_to_process in db_queries.getIngestedRadii():
                 self.queue.put(stations_to_process)
                 count += 1
-            print(f'[AnalysisPipeline] Added {count} clusters of stations to the pipeline.')
+            if count:
+                print(f'[AnalysisPipeline] Added {count} clusters of stations to the pipeline.')
 
     def start(self):
         self.thread.start()
