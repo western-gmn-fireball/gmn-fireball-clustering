@@ -4,23 +4,9 @@ import threading
 from queue import Queue
 from datetime import datetime
 
-from watchdog.events import DirCreatedEvent, FileCreatedEvent, FileSystemEventHandler
-from watchdog.observers import Observer
-
 from fireball_clustering.data_ingestion.local_fetcher import ingestFromTarball
 from fireball_clustering.database.db_writes import insertFRs, insertFieldsums, setDataToIngested
 from fireball_clustering import parameters
-
-# Handler for FS upload events
-class UploadHandler(FileSystemEventHandler):
-    def __init__(self, queue) -> None:
-        super().__init__()
-        self.queue = queue
-
-    def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
-        if isinstance(event.src_path, str) and event.src_path.endswith(".tar.bz2"):
-            self.queue.put(event.src_path)
-            print(f"[WATCHDOG] Added {event.src_path} to the queue for ingestion.")
 
 # Starts producer(FS upload handler) and consumer(FS ingestion) threads
 class FileWatcher():
@@ -28,10 +14,6 @@ class FileWatcher():
         self.queue = Queue()
 
         # File event watching and handling (producer)
-        # self.event_handler = UploadHandler(self.queue)
-        # self.observer = Observer()
-        # self.observer.schedule(self.event_handler, parameters.PATH, recursive=True)
-        # self.observer.start()
         self.observer = FileWatcherProducer(self.queue)
         self.observer.start()
 
@@ -59,12 +41,11 @@ class FileWatcherProducer():
             time.sleep(5)
             # Check for new files by comparing to most recent upload
             new_latest_timestamp = self.latest_timestamp
-            start = time.time()
             for path, mtime in self.fast_scan(parameters.PATH):
                 if mtime > self.latest_timestamp:
                     self.queue.put(path)
-                    new_latest_timestamp = mtime
-            print(f'[FileWatcherProducer] Execution time checking for new files is {time.time() - start} seconds')
+                    print(f'[Watchdog] PUT path: {path} in the queue.')
+                    new_latest_timestamp = max(mtime, new_latest_timestamp)
             self.latest_timestamp = new_latest_timestamp
 
     def fast_scan(self, dir):
@@ -78,11 +59,12 @@ class FileWatcherProducer():
                 # Only check processed directory if it has been modified recently
                 if entry.is_dir() and entry.name.lower() == 'processed' and entry_stat.st_mtime > self.latest_timestamp:
                     yield from self.fast_scan(entry.path)
-                elif entry.is_dir() and entry.name.lower() != 'processed': 
+                elif entry.is_dir() and entry.name.lower() != 'processed' and len(entry.name) == 6: 
                     yield from self.fast_scan(entry.path)
 
     def start(self):
         self.thread.start()
+        print('[Watchdog] Producer started.')
 
     def join(self):
         self.thread.join()
@@ -97,7 +79,7 @@ class QueueConsumer():
             src_path = self.queue.get(timeout=10) if not self.queue.empty() else None
             if src_path == None:
                 continue
-            print(f'[WATCHDOG] Ingesting files from {src_path}')
+            print(f'[Watchdog] Ingesting files from {src_path}')
             station_data, fr_files = ingestFromTarball(src_path)
             
             # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
@@ -110,11 +92,12 @@ class QueueConsumer():
             insertFieldsums(station_id, date_obj, station_data)
             insertFRs(station_id, date_obj, fr_files)
             setDataToIngested([(station_id, date_obj)])
-            print(f'Files ingested from {src_path}')
-            
+            print(f'[Watchdog] Files ingested from {src_path}')
 
     def start(self):
         self.thread.start()
+        print('[Watchdog] Consumer started.')
 
     def join(self):
         self.thread.join()
+
