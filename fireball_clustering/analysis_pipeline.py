@@ -43,7 +43,6 @@ class AnalysisConsumer():
             all_candidates = []
             for station_date in stations_to_process:
                 station_id, date = station_date
-                print(station_id, date)
                 print(f'[AnalysisPipeline] Processing Station: {station_id} for Date: {date}')
                 if db_queries.isProcessed(station_id, date): 
                     all_candidates.extend(db_queries.getFireballsByStationDate(station_id, date))
@@ -58,12 +57,15 @@ class AnalysisConsumer():
                     all_candidates.extend(filtered_candidates)
                     db_writes.setDataToProcessed([(station_id, date)])
                 except Exception as e:
-                    print(f'[AnalysisPipeline] ERROR: {e}')
-            try: 
-                positive_fireballs = self.perseus.cluster(all_candidates)
-                print(positive_fireballs)
-            except Exception as e:
-                print(f'[AnalysisPipeline] ERROR: {e}')
+                    print(f'[AnalysisPipeline] PROCESSING ERROR: {e}')
+            if all_candidates:
+                try: 
+                    positive_fireballs = self.perseus.cluster(all_candidates)
+                    print(positive_fireballs)
+                except Exception as e:
+                    print(f'[AnalysisPipeline] CLUSTERING ERROR: {e}')
+            else:
+                print(f'[AnalysisPipeline] No candidates found. Skipping clustering.')
 
     def start(self):
         self.thread.start()

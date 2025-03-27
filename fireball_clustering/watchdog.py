@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import traceback
 from queue import Queue
 from datetime import datetime
 
@@ -80,19 +81,23 @@ class QueueConsumer():
             if src_path == None:
                 continue
             print(f'[Watchdog] Ingesting files from {src_path}')
-            station_data, fr_files = ingestFromTarball(src_path)
-            
-            # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
-            split_path = src_path.split('_')
-            station_id_path = split_path[0]
-            station_id = station_id_path.split('/')[-1]
-            date_str = split_path[1]
-            date_obj = datetime.strptime(date_str, '%Y%m%d')
+            try:
+                station_data, fr_files = ingestFromTarball(src_path)
+                
+                # src_path of format path/to/fieldsums/dir/AU000X_239123_19.tar.bz2
+                split_path = src_path.split('_')
+                station_id_path = split_path[0]
+                station_id = station_id_path.split('/')[-1]
+                date_str = split_path[1]
+                date_obj = datetime.strptime(date_str, '%Y%m%d')
 
-            insertFieldsums(station_id, date_obj, station_data)
-            insertFRs(station_id, date_obj, fr_files)
-            setDataToIngested([(station_id, date_obj)])
-            print(f'[Watchdog] Files ingested from {src_path}')
+                insertFieldsums(station_id, date_obj, station_data)
+                insertFRs(station_id, date_obj, fr_files)
+                setDataToIngested([(station_id, date_obj)])
+                print(f'[Watchdog] Files ingested from {src_path}')
+            except Exception as e:
+                print(f'Error: {e}')
+                traceback.print_exc()
 
     def start(self):
         self.thread.start()
