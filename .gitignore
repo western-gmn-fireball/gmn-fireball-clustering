@@ -9,3 +9,4 @@ fieldsums/
 plots/
 tmp*/
 tmp*
+.vscode/*

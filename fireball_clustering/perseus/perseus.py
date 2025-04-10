@@ -43,14 +43,14 @@ class Perseus:
         Note:
             This method constructs and processes field sum data files based on the provided station ID and date.
         """
-        file_name = f'{station_id}_{date.strftime('%Y%m%d')}'
+        file_name = f'{station_id}_{date.strftime("%Y%m%d")}'
         file_path = os.path.join(self.fs_path, file_name)
         ingestedStationData: StationData = StationData([], []) 
         ingestedStationData = ingestStationData(file_path)
         return ingestedStationData
     
     def ingestFR(self, station_id: str, date: datetime.datetime) -> list[datetime.datetime]:
-        file_name = f'{station_id}_{date.strftime('%Y%m%d')}'
+        file_name = f'{station_id}_{date.strftime("%Y%m%d")}'
         file_path = os.path.join(self.fr_path, file_name)
         fr_timestamps = ingestFRFiles(file_path)
         return fr_timestamps
